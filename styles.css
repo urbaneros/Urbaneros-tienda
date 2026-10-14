@@ -217,3 +217,20 @@ body .product-dialog #copy-message:hover{background:#d8b772;color:#171715}
 .whatsapp-float{width:56px;height:56px;padding:0;justify-content:center;border-radius:50%}
 .whatsapp-float svg{width:26px;height:26px}
 @media(max-width:760px){.whatsapp-float{width:52px;height:52px;padding:0}.whatsapp-float svg{width:24px;height:24px}}
+@media(max-width:760px){
+  .product-dialog .dialog-image{height:auto;min-height:0;display:flex;align-items:center;justify-content:center;background:#171715}
+  .product-dialog .dialog-image img{position:static;display:block;width:100%;height:auto;max-height:60vh;object-fit:contain}
+}
+.card-photo-arrow{position:absolute;top:50%;z-index:2;display:grid;place-items:center;width:36px;height:36px;padding:0;border:1px solid #c6a15a;background:#171715dc;color:#d8b772;border-radius:50%;cursor:pointer;transform:translateY(-50%);touch-action:manipulation}
+.card-photo-arrow:hover,.card-photo-arrow:focus-visible{background:#c6a15a;color:#171715}
+.card-photo-arrow:focus-visible{outline:2px solid #171715;outline-offset:2px}
+.card-photo-arrow svg{display:block;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.card-photo-prev{left:9px}
+.card-photo-next{right:9px}
+@media(max-width:760px){.card-photo-arrow{width:32px;height:32px}.card-photo-arrow svg{width:15px;height:15px}.card-photo-prev{left:6px}.card-photo-next{right:6px}}
+.product-image-wrap{touch-action:pan-y}
+.product-image-wrap img.photo-slide-left{animation:card-photo-left .24s ease-out}
+.product-image-wrap img.photo-slide-right{animation:card-photo-right .24s ease-out}
+@keyframes card-photo-left{from{opacity:.55;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+@keyframes card-photo-right{from{opacity:.55;transform:translateX(-14px)}to{opacity:1;transform:translateX(0)}}
+@media(prefers-reduced-motion:reduce){.product-image-wrap img.photo-slide-left,.product-image-wrap img.photo-slide-right{animation:none}}

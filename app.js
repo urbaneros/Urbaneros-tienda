@@ -30,11 +30,29 @@ let activeCategory = "Todo";
 let onlySaved = false;
 let saved = new Set();
 let activeProductPhotos = [];
+const cardPhotoIndices = new Map();
 let currentAdmin = false;
 let featuredFieldsReady = true;
 let categoriesTableReady = false;
 
 const safe = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
+const priceAmount = value => String(value || "").match(/\d[\d.,]*/)?.[0] || "";
+const priceCurrency = value => /US\s*\$|USD|d[oó]lar/i.test(String(value || "")) ? "US$" : "$";
+function formatPrice(value, currency) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const amount = raw.replace(/\./g, "");
+  if (!/^\d+(?:,\d{1,2})?$/.test(amount)) return null;
+  const [whole, cents] = amount.split(",");
+  const grouped = whole.replace(/^0+(?=\d)/, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return `${currency}${grouped}${cents ? `,${cents}` : ""}`;
+}
+function displayPrice(value) {
+  const original = String(value || "").trim();
+  if (!original) return "";
+  const amount = priceAmount(original);
+  return amount ? formatPrice(amount, priceCurrency(original)) || original : original;
+}
 const photosOf = product => (Array.isArray(product.photos) ? product.photos : []).filter(Boolean).slice(0, 3);
 const fallbackImage = product => product.image ? `https://images.unsplash.com/${product.image}?auto=format&fit=crop&w=900&q=82` : "";
 const mainPhoto = product => photosOf(product)[0] || fallbackImage(product);
@@ -78,14 +96,17 @@ function render() {
   );
   grid.innerHTML = shown.map(product => {
     const photoCount = photosOf(product).length;
+    const productId = String(product.id);
+    const photoIndex = Math.min(cardPhotoIndices.get(productId) || 0, Math.max(0, photoCount - 1));
+    const cardPhoto = photosOf(product)[photoIndex] || mainPhoto(product);
     const isSaved = saved.has(String(product.id));
     const hasDiscount = Boolean(product.is_featured && product.compare_at_price && product.price);
-    return `<article class="product-card">
+    return `<article class="product-card" data-product-id="${safe(product.id)}">
       <div class="product-image-wrap">
-        <img src="${safe(mainPhoto(product))}" alt="${safe(product.name)}" loading="lazy" />
+        <img src="${safe(cardPhoto)}" alt="${safe(product.name)}" loading="lazy" />
         <span class="image-category">${safe(categoryLabel(product.category))}</span>
         <button class="favorite-button" data-save="${safe(product.id)}" aria-label="${isSaved ? "Quitar de favoritos" : "Guardar en favoritos"}" aria-pressed="${isSaved}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg></button>
-        ${photoCount > 1 ? `<span class="photo-count">${photoCount} fotos</span>` : ""}
+        ${photoCount > 1 ? `<button class="card-photo-arrow card-photo-prev" type="button" data-photo-step="-1" data-photo-id="${safe(product.id)}" aria-label="Foto anterior de ${safe(product.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><button class="card-photo-arrow card-photo-next" type="button" data-photo-step="1" data-photo-id="${safe(product.id)}" aria-label="Foto siguiente de ${safe(product.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><span class="photo-count">${photoIndex + 1} / ${photoCount}</span>` : ""}
         <button class="quick-view" data-view="${safe(product.id)}">Ver producto</button>
       </div>
       <div class="product-price${hasDiscount ? " product-price-sale" : ""}">${hasDiscount ? `<span class="sale-label">OFERTA</span><del>${safe(product.compare_at_price)}</del><strong>${safe(product.price)}</strong>` : safe(product.price || "Consultar precio")}</div>
@@ -179,7 +200,11 @@ async function loadProducts() {
     render();
     return;
   }
-  products = data || [];
+  products = (data || []).map(product => ({
+    ...product,
+    price: displayPrice(product.price),
+    compare_at_price: displayPrice(product.compare_at_price)
+  }));
   render();
 }
 async function loadCategories() {
@@ -212,9 +237,10 @@ function editProduct(product) {
   productForm.elements.name.value = product.name || "";
   productForm.elements.category.value = product.category || "";
   productForm.elements.detail.value = product.detail || "";
-  productForm.elements.price.value = product.price || "";
+  productForm.elements.currency.value = priceCurrency(product.price || product.compare_at_price);
+  productForm.elements.price.value = priceAmount(product.price);
   productForm.elements.is_featured.checked = Boolean(product.is_featured);
-  productForm.elements.compare_at_price.value = product.compare_at_price || "";
+  productForm.elements.compare_at_price.value = priceAmount(product.compare_at_price);
   productForm.elements.photos.value = "";
   document.querySelector("#product-form-title").textContent = "Editar producto";
   document.querySelector("#save-product").textContent = "Guardar cambios";
@@ -260,7 +286,26 @@ document.querySelector(".main-nav").addEventListener("click", event => {
   document.querySelector("#main-nav").classList.remove("open");
   document.querySelector("#menu-toggle").setAttribute("aria-expanded", "false");
 });
+function changeCardPhoto(card, step) {
+  const product = products.find(item => String(item.id) === card?.dataset.productId);
+  const photos = product && photosOf(product);
+  if (!photos || photos.length < 2) return;
+  const id = String(product.id);
+  const index = ((cardPhotoIndices.get(id) || 0) + step + photos.length) % photos.length;
+  cardPhotoIndices.set(id, index);
+  const image = card.querySelector(".product-image-wrap > img");
+  image.src = photos[index];
+  image.classList.remove("photo-slide-left", "photo-slide-right");
+  void image.offsetWidth;
+  image.classList.add(step > 0 ? "photo-slide-left" : "photo-slide-right");
+  card.querySelector(".photo-count").textContent = `${index + 1} / ${photos.length}`;
+}
 grid.addEventListener("click", event => {
+  const photoButton = event.target.closest("[data-photo-step]");
+  if (photoButton) {
+    changeCardPhoto(photoButton.closest(".product-card"), Number(photoButton.dataset.photoStep));
+    return;
+  }
   const saveButton = event.target.closest("[data-save]");
   if (saveButton) {
     const id = saveButton.dataset.save;
@@ -271,6 +316,21 @@ grid.addEventListener("click", event => {
   const product = products.find(item => String(item.id) === viewButton?.dataset.view);
   if (product) openProduct(product);
 });
+let cardSwipe = null;
+grid.addEventListener("touchstart", event => {
+  if (event.touches.length !== 1 || event.target.closest("button")) return;
+  const card = event.target.closest(".product-card");
+  if (!card || !event.target.closest(".product-image-wrap")) return;
+  cardSwipe = { card, x: event.touches[0].clientX, y: event.touches[0].clientY };
+}, { passive: true });
+grid.addEventListener("touchend", event => {
+  if (!cardSwipe || !event.changedTouches.length) return;
+  const dx = event.changedTouches[0].clientX - cardSwipe.x;
+  const dy = event.changedTouches[0].clientY - cardSwipe.y;
+  if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy) * 1.3) changeCardPhoto(cardSwipe.card, dx < 0 ? 1 : -1);
+  cardSwipe = null;
+}, { passive: true });
+grid.addEventListener("touchcancel", () => { cardSwipe = null; }, { passive: true });
 const featuredCard = document.querySelector("#featured-product-card");
 function openFeaturedProduct() {
   const product = products.find(item => item.is_featured);
@@ -352,7 +412,11 @@ productForm.addEventListener("submit", async event => {
   const button = document.querySelector("#save-product");
   const files = [...productForm.elements.photos.files];
   if (files.length > 3) return setStatus(status, "Puedes elegir como máximo 3 fotos.", true);
-  if (productForm.elements.is_featured.checked && (!productForm.elements.price.value.trim() || !productForm.elements.compare_at_price.value.trim())) return setStatus(status, "Para el producto semanal, completa el precio de oferta y el precio anterior.", true);
+  const currency = productForm.elements.currency.value;
+  const price = formatPrice(productForm.elements.price.value, currency);
+  const compareAtPrice = formatPrice(productForm.elements.compare_at_price.value, currency);
+  if (price === null || compareAtPrice === null) return setStatus(status, "Escribe solo números; usa punto para miles y coma para centavos. Ejemplo: 1.990", true);
+  if (productForm.elements.is_featured.checked && (!price || !compareAtPrice)) return setStatus(status, "Para el producto semanal, completa el precio de oferta y el precio anterior.", true);
   button.disabled = true;
   setStatus(status, "Guardando producto…");
   try {
@@ -369,9 +433,9 @@ productForm.addEventListener("submit", async event => {
       category: productForm.elements.category.value,
       name: productForm.elements.name.value.trim(),
       detail: productForm.elements.detail.value.trim(),
-      price: productForm.elements.price.value.trim(),
+      price,
       is_featured: productForm.elements.is_featured.checked,
-      compare_at_price: productForm.elements.is_featured.checked ? productForm.elements.compare_at_price.value.trim() : "",
+      compare_at_price: productForm.elements.is_featured.checked ? compareAtPrice : "",
       photos
     };
     const { error } = await supabaseClient.from("products").upsert(record).select().single();
