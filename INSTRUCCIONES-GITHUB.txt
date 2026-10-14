@@ -1,0 +1,26 @@
+URBANEROS — CATÁLOGO PÚBLICO CON ADMINISTRACIÓN PRIVADA
+
+Esta carpeta contiene la web pública. Los visitantes ven los productos; solamente la cuenta autorizada en Supabase puede iniciar sesión, cargar fotos y administrar el catálogo. GitHub Pages publica la página; Supabase guarda los productos, las fotos y los permisos.
+
+ANTES DE PUBLICAR
+1. Conecta esta página a tu proyecto Supabase en supabase-config.js con Project URL y Publishable key. Nunca pongas una Secret key en este archivo.
+2. En Supabase, abre SQL Editor > New query. Ejecuta el archivo privado urbaneros-admin-setup-privado.sql que te preparé. Ya está configurado para el correo administrador que indicaste. No subas ese archivo SQL al repositorio público.
+3. En Supabase Authentication, desactiva los registros públicos de usuarios. Deja creado solo tu usuario administrador. No agregues más usuarios.
+4. Usa solamente la clave Publishable (sb_publishable_...). No copies claves Secret (sb_secret_...) al código de la tienda.
+
+PUBLICAR EN GITHUB
+1. Crea un repositorio público nuevo dedicado solo a la tienda; deja privado tu repositorio actual.
+2. Sube el contenido de esta carpeta, sin el SQL privado.
+3. En Settings > Pages, elige Deploy from a branch, selecciona main y /(root), y guarda.
+4. Espera el enlace que GitHub Pages mostrará en esa sección.
+
+ENTRAR A ADMINISTRAR
+1. Abre la dirección pública de la tienda y añade #admin al final (por ejemplo, https://usuario.github.io/urbaneros-tienda/#admin).
+2. Inicia sesión con el correo y la contraseña del usuario que creaste en Supabase.
+3. Agrega el nombre, categoría, descripción, precio opcional y hasta 3 fotos. Guarda; el producto aparece en el catálogo público.
+4. Cuando la sesión esté iniciada, el botón “Administrar tienda” aparecerá en la cabecera. Los visitantes no lo verán.
+
+SEGURIDAD
+- El catálogo es público y los productos/fotos son visibles para cualquiera que visite la página.
+- La base de datos autoriza leer los productos sin iniciar sesión, pero solo la cuenta autorizada puede agregarlos, cambiarlos, quitarlos o subir fotos.
+- No subas contraseñas, claves Secret ni urbaneros-admin-setup.sql al repositorio público.

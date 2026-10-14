@@ -1,0 +1,4 @@
+Subí las fotos de tus productos dentro de esta carpeta.
+Después agrega el nombre del archivo en el campo "photos" de productos.json, por ejemplo:
+"photos": ["images/zapatilla-negra-1.jpg", "images/zapatilla-negra-2.jpg"]
+Puedes agregar una, dos o tres fotos por producto.

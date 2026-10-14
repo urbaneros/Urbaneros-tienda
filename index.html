@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#171715" />
+    <meta name="description" content="Urbaneros: calzado, indumentaria, tecnología y accesorios. Consultá precio y disponibilidad." />
+    <title>Urbaneros — Catálogo multimarca</title>
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./admin.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase-config.js"></script>
+    <script src="./app.js" defer></script>
+  </head>
+  <body data-theme="noche">
+    <div class="announcement"><span>UNA SELECCIÓN PARA TODOS LOS DÍAS</span><span class="announcement-note">Consultá disponibilidad y precio</span></div>
+    <header class="site-header">
+      <button class="menu-toggle" id="menu-toggle" aria-label="Abrir categorías" aria-expanded="false"><span></span><span></span></button>
+      <a class="wordmark" href="#inicio" aria-label="Urbaneros, inicio"><img src="./logo-urbaneros.jpeg" alt="" /><span class="wordmark-label">URBANEROS</span></a>
+      <nav class="main-nav" id="main-nav" aria-label="Categorías">
+        <a href="#catalogo" data-nav-category="Calzado">Calzado</a>
+        <a href="#catalogo" data-nav-category="Indumentaria masculina">Hombre</a>
+        <a href="#catalogo" data-nav-category="Indumentaria femenina">Mujer</a>
+        <a href="#catalogo" data-nav-category="Carteras">Carteras</a>
+        <a href="#catalogo" data-nav-category="iPhone">iPhone</a>
+        <a href="#catalogo" data-nav-category="Cases exclusivos">Cases</a>
+        <a href="#catalogo" data-nav-category="Lentes de sol">Lentes</a>
+        <a href="#catalogo" data-nav-category="Relojes originales">Relojes</a>
+        <a href="#catalogo" data-nav-category="Perfumes">Perfumes</a>
+      </nav>
+      <button class="admin-trigger" id="admin-entry" type="button" hidden>Administrar tienda</button>
+      <button class="bag-button" id="saved-button" aria-label="Ver favoritos"><span class="bag-label">FAVORITOS</span><span class="saved-count" id="saved-count">0</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg></button>
+      
+    </header>
+
+    <main>
+      <section class="hero" id="inicio">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="eyebrow-line"></span>CALIDAD - EXCLUSIVIDAD - TENDENCIA</p>
+          <h1>Definí<br /><em>Tu Estilo</em></h1>
+          <p class="hero-description">Todo lo que buscas en un solo lugar. Consúltanos por cada producto.</p>
+          <a class="button button-dark" href="#catalogo">Ver productos <span aria-hidden="true">↘</span></a>
+          <div class="hero-note"><span class="hero-note-icon">✳</span><span>Calzado · Moda · Tecnología · Accesorios</span></div>
+        </div>
+        <div class="hero-visual" role="img" aria-label="Selección de estilo y accesorios">
+          <img src="./portada-calzado-urbaneros.jpeg" alt="Zapatilla negra de estilo urbano en la ciudad" />
+          <div class="hero-image-wash"></div>
+          
+          
+          
+        </div>
+        
+      </section>
+
+      <section class="category-strip" aria-label="Explorar por categoría">
+        <div class="strip-title"><span>EXPLORÁ NUESTRAS CATEGORÍAS</span><span class="strip-arrow">↓</span></div>
+        <div class="category-links">
+          <button data-category="Calzado"><span>01</span>Calzado</button>
+          <button data-category="Indumentaria masculina"><span>02</span>Indumentaria masculina</button>
+          <button data-category="Indumentaria femenina"><span>03</span>Indumentaria femenina</button>
+          <button data-category="Carteras"><span>04</span>Carteras</button>
+          <button data-category="iPhone"><span>05</span>iPhone</button>
+          <button data-category="Cases exclusivos"><span>06</span>Cases exclusivos</button>
+          <button data-category="Lentes de sol"><span>07</span>Lentes de sol</button>
+          <button data-category="Relojes originales"><span>08</span>Relojes originales</button>
+          <button data-category="Perfumes"><span>09</span>Perfumes</button>
+        </div>
+      </section>
+
+      <section class="catalog-section" id="catalogo">
+        <div class="section-heading">
+          <div><p class="eyebrow"><span class="eyebrow-line"></span>LA SELECCIÓN</p><h2>Colección <em>Urbaneros</em></h2></div>
+          <p class="section-intro">Explorá nuestras marcas y consultá por disponibilidad.</p>
+        </div>
+        <div class="catalog-tools">
+          <div class="filters" id="filters" aria-label="Filtrar productos"></div>
+          <label class="search-box"><span class="sr-only">Buscar en el catálogo</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="search" type="search" placeholder="Buscar producto" autocomplete="off" /></label>
+        </div>
+        <div class="result-line"><span id="result-count">9 productos</span><button class="reset-link" id="clear-filters" hidden>Limpiar filtros <span>×</span></button></div>
+        <div class="product-grid" id="product-grid" aria-live="polite"></div>
+        <div class="empty-state" id="empty-state" hidden><span>✳</span><h3>No encontramos esa selección</h3><p>Probá con otra búsqueda o elegí una categoría diferente.</p><button class="button button-dark" id="show-all">Ver toda la selección</button></div>
+        <p class="catalog-disclaimer">Selección visual de referencia. Consultá modelos, talles, colores, stock y precio.</p>
+      </section>
+
+      <section class="closing-note">
+        <div class="closing-mark">U.</div><div><p class="eyebrow"><span class="eyebrow-line"></span>UN BUEN HALLAZGO CAMBIA EL DÍA</p><h2>Calidad para tu<br /><em>día a día.</em></h2></div>
+        <a href="#catalogo" class="closing-link">VOLVER A EXPLORAR <span>↗</span></a>
+        <div class="closing-ornament" aria-hidden="true">URBANEROS</div>
+      </section>
+    </main>
+
+    <footer class="site-footer"><a class="wordmark footer-wordmark" href="#inicio">URBAN<span>EROS</span></a><span>ESTILO, OBJETOS Y DETALLES.</span><a href="#catalogo">EXPLORAR SELECCIÓN ↑</a></footer>
+
+    <section class="admin-panel" id="admin-panel" hidden aria-labelledby="admin-title">
+      <div class="admin-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span>ACCESO PRIVADO</p><h2 id="admin-title">Administrar <em>Urbaneros</em></h2></div><button class="admin-close" id="admin-close" type="button" aria-label="Cerrar administración">×</button></div>
+      <div class="admin-login" id="admin-login">
+        <p>Iniciá sesión con el usuario administrador de Urbaneros.</p>
+        <form id="login-form"><label>Correo<input name="email" type="email" autocomplete="username" required /></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" required /></label><button class="button button-gold" type="submit">Iniciar sesión</button><p class="admin-status" id="login-status" role="status"></p></form>
+      </div>
+      <div class="admin-workspace" id="admin-workspace" hidden>
+        <div class="admin-workspace-top"><p>Desde aquí puedes agregar, editar o quitar productos. Los cambios se guardan en el catálogo público.</p><button class="admin-logout" id="admin-logout" type="button">Cerrar sesión</button></div>
+        <form id="product-form" class="product-form">
+          <input name="id" type="hidden" />
+          <h3 id="product-form-title">Agregar producto</h3>
+          <div class="admin-fields"><label>Nombre<input name="name" maxlength="100" required /></label><label>Categoría<select name="category" required><option value="">Elegir categoría</option><option>Calzado</option><option>Indumentaria masculina</option><option>Indumentaria femenina</option><option>Carteras</option><option>iPhone</option><option>Cases exclusivos</option><option>Lentes de sol</option><option>Relojes originales</option><option>Perfumes</option></select></label><label>Descripción<input name="detail" maxlength="180" required /></label><label>Precio (opcional)<input name="price" maxlength="80" placeholder="Ej.: $ 2.490" /></label></div>
+          <label class="photo-picker">Fotos del producto <span>(puedes elegir hasta 3)</span><input name="photos" type="file" accept="image/*" multiple /></label>
+          <div class="admin-actions"><button class="button button-gold" type="submit" id="save-product">Guardar producto</button><button class="admin-cancel" id="cancel-edit" type="button" hidden>Cancelar edición</button></div>
+          <p class="admin-status" id="product-status" role="status"></p>
+        </form>
+        <div class="admin-products"><h3>Productos del catálogo</h3><div id="admin-product-list"></div></div>
+      </div>
+    </section>
+    <div class="admin-backdrop" id="admin-backdrop" hidden></div>
+
+    <dialog class="product-dialog" id="product-dialog" aria-labelledby="dialog-title">
+      <button class="dialog-close" id="dialog-close" aria-label="Cerrar">×</button>
+      <div class="dialog-image"><img id="dialog-image" src="" alt="" /></div>
+      <div class="dialog-copy"><p class="eyebrow" id="dialog-category"></p><h2 id="dialog-title"></h2><p class="dialog-price" id="dialog-price"></p><div class="product-thumbnails" id="product-thumbnails" hidden></div><p class="dialog-description">Consultá precio, disponibilidad, colores y detalles de este producto.</p><label for="message-text" class="message-label">TU MENSAJE</label><textarea id="message-text" readonly rows="3"></textarea><button class="button button-dark copy-button" id="copy-message">Consultar por WhatsApp <span>↗</span></button><p class="contact-note" id="contact-note">Te respondemos por WhatsApp.</p></div>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
