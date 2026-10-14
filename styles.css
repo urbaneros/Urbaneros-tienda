@@ -228,9 +228,8 @@ body .product-dialog #copy-message:hover{background:#d8b772;color:#171715}
 .card-photo-prev{left:9px}
 .card-photo-next{right:9px}
 @media(max-width:760px){.card-photo-arrow{width:32px;height:32px}.card-photo-arrow svg{width:15px;height:15px}.card-photo-prev{left:6px}.card-photo-next{right:6px}}
-.product-image-wrap{touch-action:pan-y}
-.product-image-wrap img.photo-slide-left{animation:card-photo-left .24s ease-out}
-.product-image-wrap img.photo-slide-right{animation:card-photo-right .24s ease-out}
-@keyframes card-photo-left{from{opacity:.55;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
-@keyframes card-photo-right{from{opacity:.55;transform:translateX(-14px)}to{opacity:1;transform:translateX(0)}}
-@media(prefers-reduced-motion:reduce){.product-image-wrap img.photo-slide-left,.product-image-wrap img.photo-slide-right{animation:none}}
+.product-image-wrap{touch-action:auto}
+.card-photo-scroller{position:absolute;inset:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.card-photo-scroller::-webkit-scrollbar{display:none}
+.product-image-wrap .card-photo-scroller img{display:block;flex:0 0 100%;width:100%;height:100%;object-fit:cover;scroll-snap-align:start;transform:none!important;transition:none;user-select:none;-webkit-user-drag:none}
+@media(prefers-reduced-motion:reduce){.card-photo-scroller{scroll-behavior:auto}}

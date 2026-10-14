@@ -98,12 +98,12 @@ function render() {
     const photoCount = photosOf(product).length;
     const productId = String(product.id);
     const photoIndex = Math.min(cardPhotoIndices.get(productId) || 0, Math.max(0, photoCount - 1));
-    const cardPhoto = photosOf(product)[photoIndex] || mainPhoto(product);
+    const cardPhotos = photoCount ? photosOf(product) : [mainPhoto(product)];
     const isSaved = saved.has(String(product.id));
     const hasDiscount = Boolean(product.is_featured && product.compare_at_price && product.price);
     return `<article class="product-card" data-product-id="${safe(product.id)}">
       <div class="product-image-wrap">
-        <img src="${safe(cardPhoto)}" alt="${safe(product.name)}" loading="lazy" />
+        <div class="card-photo-scroller">${cardPhotos.map((photo, index) => `<img src="${safe(photo)}" alt="${safe(product.name)}${photoCount > 1 ? `, foto ${index + 1} de ${photoCount}` : ""}" loading="lazy" draggable="false" />`).join("")}</div>
         <span class="image-category">${safe(categoryLabel(product.category))}</span>
         <button class="favorite-button" data-save="${safe(product.id)}" aria-label="${isSaved ? "Quitar de favoritos" : "Guardar en favoritos"}" aria-pressed="${isSaved}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg></button>
         ${photoCount > 1 ? `<button class="card-photo-arrow card-photo-prev" type="button" data-photo-step="-1" data-photo-id="${safe(product.id)}" aria-label="Foto anterior de ${safe(product.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><button class="card-photo-arrow card-photo-next" type="button" data-photo-step="1" data-photo-id="${safe(product.id)}" aria-label="Foto siguiente de ${safe(product.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><span class="photo-count">${photoIndex + 1} / ${photoCount}</span>` : ""}
@@ -113,6 +113,18 @@ function render() {
       <div class="product-info"><div><h3>${safe(product.name)}</h3><p>${safe(product.category)} · ${safe(product.detail)}</p></div></div>
     </article>`;
   }).join("");
+  grid.querySelectorAll(".card-photo-scroller").forEach(scroller => {
+    const card = scroller.closest(".product-card");
+    const index = cardPhotoIndices.get(card.dataset.productId) || 0;
+    if (index) scroller.scrollLeft = index * scroller.clientWidth;
+    scroller.addEventListener("scroll", () => {
+      const count = scroller.children.length;
+      if (count < 2 || !scroller.clientWidth) return;
+      const visible = Math.max(0, Math.min(count - 1, Math.round(scroller.scrollLeft / scroller.clientWidth)));
+      cardPhotoIndices.set(card.dataset.productId, visible);
+      card.querySelector(".photo-count").textContent = `${visible + 1} / ${count}`;
+    }, { passive: true });
+  });
   count.textContent = `${shown.length} ${shown.length === 1 ? "producto" : "productos"}`;
   empty.hidden = shown.length !== 0;
   grid.hidden = shown.length === 0;
@@ -293,11 +305,8 @@ function changeCardPhoto(card, step) {
   const id = String(product.id);
   const index = ((cardPhotoIndices.get(id) || 0) + step + photos.length) % photos.length;
   cardPhotoIndices.set(id, index);
-  const image = card.querySelector(".product-image-wrap > img");
-  image.src = photos[index];
-  image.classList.remove("photo-slide-left", "photo-slide-right");
-  void image.offsetWidth;
-  image.classList.add(step > 0 ? "photo-slide-left" : "photo-slide-right");
+  const scroller = card.querySelector(".card-photo-scroller");
+  scroller.scrollTo({ left: index * scroller.clientWidth, behavior: "smooth" });
   card.querySelector(".photo-count").textContent = `${index + 1} / ${photos.length}`;
 }
 grid.addEventListener("click", event => {
@@ -316,21 +325,6 @@ grid.addEventListener("click", event => {
   const product = products.find(item => String(item.id) === viewButton?.dataset.view);
   if (product) openProduct(product);
 });
-let cardSwipe = null;
-grid.addEventListener("touchstart", event => {
-  if (event.touches.length !== 1 || event.target.closest("button")) return;
-  const card = event.target.closest(".product-card");
-  if (!card || !event.target.closest(".product-image-wrap")) return;
-  cardSwipe = { card, x: event.touches[0].clientX, y: event.touches[0].clientY };
-}, { passive: true });
-grid.addEventListener("touchend", event => {
-  if (!cardSwipe || !event.changedTouches.length) return;
-  const dx = event.changedTouches[0].clientX - cardSwipe.x;
-  const dy = event.changedTouches[0].clientY - cardSwipe.y;
-  if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy) * 1.3) changeCardPhoto(cardSwipe.card, dx < 0 ? 1 : -1);
-  cardSwipe = null;
-}, { passive: true });
-grid.addEventListener("touchcancel", () => { cardSwipe = null; }, { passive: true });
 const featuredCard = document.querySelector("#featured-product-card");
 function openFeaturedProduct() {
   const product = products.find(item => item.is_featured);
