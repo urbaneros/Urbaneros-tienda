@@ -79,6 +79,7 @@ function render() {
   grid.innerHTML = shown.map(product => {
     const photoCount = photosOf(product).length;
     const isSaved = saved.has(String(product.id));
+    const hasDiscount = Boolean(product.is_featured && product.compare_at_price && product.price);
     return `<article class="product-card">
       <div class="product-image-wrap">
         <img src="${safe(mainPhoto(product))}" alt="${safe(product.name)}" loading="lazy" />
@@ -87,7 +88,7 @@ function render() {
         ${photoCount > 1 ? `<span class="photo-count">${photoCount} fotos</span>` : ""}
         <button class="quick-view" data-view="${safe(product.id)}">Ver producto</button>
       </div>
-      <div class="product-price">${safe(product.price || "Consultar precio")}</div>
+      <div class="product-price${hasDiscount ? " product-price-sale" : ""}">${hasDiscount ? `<span class="sale-label">OFERTA</span><del>${safe(product.compare_at_price)}</del><strong>${safe(product.price)}</strong>` : safe(product.price || "Consultar precio")}</div>
       <div class="product-info"><div><h3>${safe(product.name)}</h3><p>${safe(product.category)} · ${safe(product.detail)}</p></div></div>
     </article>`;
   }).join("");
@@ -122,6 +123,7 @@ function renderFeaturedProduct() {
   document.querySelector("#featured-detail").textContent = product.detail || "";
   document.querySelector("#featured-old-price").textContent = product.compare_at_price || "";
   document.querySelector("#featured-price").textContent = product.price || "Consultar precio";
+  document.querySelector("#featured-product-card").setAttribute("aria-label", `Ver ${product.name} y consultar`);
 }
 function openProduct(product) {
   activeProductPhotos = photosOf(product);
@@ -131,7 +133,10 @@ function openProduct(product) {
   image.alt = product.name;
   document.querySelector("#dialog-category").textContent = categoryLabel(product.category);
   document.querySelector("#dialog-title").textContent = product.name;
-  document.querySelector("#dialog-price").textContent = product.price || "Consultar precio";
+  const dialogPrice = document.querySelector("#dialog-price");
+  const hasDiscount = Boolean(product.is_featured && product.compare_at_price && product.price);
+  dialogPrice.classList.toggle("dialog-price-sale", hasDiscount);
+  dialogPrice.innerHTML = hasDiscount ? `<span>OFERTA</span><del>${safe(product.compare_at_price)}</del><strong>${safe(product.price)}</strong>` : safe(product.price || "Consultar precio");
   const thumbnails = document.querySelector("#product-thumbnails");
   thumbnails.innerHTML = activeProductPhotos.map((photo, index) => `<button class="product-thumbnail ${index === 0 ? "active" : ""}" type="button" data-gallery-index="${index}" aria-label="Ver foto ${index + 1}"><img src="${safe(photo)}" alt="" /></button>`).join("");
   thumbnails.hidden = activeProductPhotos.length < 2;
@@ -265,6 +270,17 @@ grid.addEventListener("click", event => {
   const viewButton = event.target.closest("[data-view]");
   const product = products.find(item => String(item.id) === viewButton?.dataset.view);
   if (product) openProduct(product);
+});
+const featuredCard = document.querySelector("#featured-product-card");
+function openFeaturedProduct() {
+  const product = products.find(item => item.is_featured);
+  if (product) openProduct(product);
+}
+featuredCard.addEventListener("click", openFeaturedProduct);
+featuredCard.addEventListener("keydown", event => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  openFeaturedProduct();
 });
 search.addEventListener("input", render);
 document.querySelector("#saved-button").addEventListener("click", () => {
