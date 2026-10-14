@@ -26,7 +26,7 @@
         <a href="#catalogo" data-nav-category="Indumentaria masculina">Hombre</a>
         <a href="#catalogo" data-nav-category="Indumentaria femenina">Mujer</a>
         <a href="#catalogo" data-nav-category="Carteras">Carteras</a>
-        <a href="#catalogo" data-nav-category="iPhone">iPhone</a>
+        <a href="#catalogo" data-nav-category="iPhone">Apple</a>
         <a href="#catalogo" data-nav-category="Cases exclusivos">Cases</a>
         <a href="#catalogo" data-nav-category="Lentes de sol">Lentes</a>
         <a href="#catalogo" data-nav-category="Relojes originales">Relojes</a>
@@ -43,12 +43,16 @@
           <p class="eyebrow"><span class="eyebrow-line"></span>CALIDAD - EXCLUSIVIDAD - TENDENCIA</p>
           <h1>Definí<br /><em>Tu Estilo</em></h1>
           <p class="hero-description">Todo lo que buscas en un solo lugar. Consúltanos por cada producto.</p>
-          <a class="button button-dark" href="#catalogo">Ver productos <span aria-hidden="true">↘</span></a>
-          <div class="hero-note"><span class="hero-note-icon">✳</span><span>Calzado · Moda · Tecnología · Accesorios</span></div>
+          <a class="button button-dark" href="#catalogo">Ver productos</a>
+          <div class="hero-note"><span>Calzado · Moda · Tecnología · Accesorios</span></div>
         </div>
-        <div class="hero-visual" role="img" aria-label="Selección de estilo y accesorios">
+        <div class="hero-visual">
           <img src="./portada-calzado-urbaneros.jpeg" alt="Zapatilla negra de estilo urbano en la ciudad" />
           <div class="hero-image-wash"></div>
+          <a class="hero-instagram" href="https://www.instagram.com/urbaneros_uy" target="_blank" rel="noopener noreferrer" aria-label="Encontranos en Instagram, perfil de Urbaneros">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle class="instagram-dot" cx="17.7" cy="6.7" r=".9"/></svg>
+            <span>Encontranos en Instagram</span>
+          </a>
           
           
           
@@ -57,17 +61,17 @@
       </section>
 
       <section class="category-strip" aria-label="Explorar por categoría">
-        <div class="strip-title"><span>EXPLORÁ NUESTRAS CATEGORÍAS</span><span class="strip-arrow">↓</span></div>
-        <div class="category-links">
-          <button data-category="Calzado"><span>01</span>Calzado</button>
-          <button data-category="Indumentaria masculina"><span>02</span>Indumentaria masculina</button>
-          <button data-category="Indumentaria femenina"><span>03</span>Indumentaria femenina</button>
-          <button data-category="Carteras"><span>04</span>Carteras</button>
-          <button data-category="iPhone"><span>05</span>iPhone</button>
-          <button data-category="Cases exclusivos"><span>06</span>Cases exclusivos</button>
-          <button data-category="Lentes de sol"><span>07</span>Lentes de sol</button>
-          <button data-category="Relojes originales"><span>08</span>Relojes originales</button>
-          <button data-category="Perfumes"><span>09</span>Perfumes</button>
+        <div class="strip-title"><span>EXPLORÁ NUESTRAS CATEGORÍAS</span></div>
+        <div class="category-links" id="category-links">
+          <button data-category="Calzado">Calzado</button>
+          <button data-category="Indumentaria masculina">Indumentaria masculina</button>
+          <button data-category="Indumentaria femenina">Indumentaria femenina</button>
+          <button data-category="Carteras">Carteras</button>
+          <button data-category="iPhone">Apple</button>
+          <button data-category="Cases exclusivos">Cases exclusivos</button>
+          <button data-category="Lentes de sol">Lentes de sol</button>
+          <button data-category="Relojes originales">Relojes originales</button>
+          <button data-category="Perfumes">Perfumes</button>
         </div>
       </section>
 
@@ -82,18 +86,19 @@
         </div>
         <div class="result-line"><span id="result-count">9 productos</span><button class="reset-link" id="clear-filters" hidden>Limpiar filtros <span>×</span></button></div>
         <div class="product-grid" id="product-grid" aria-live="polite"></div>
-        <div class="empty-state" id="empty-state" hidden><span>✳</span><h3>No encontramos esa selección</h3><p>Probá con otra búsqueda o elegí una categoría diferente.</p><button class="button button-dark" id="show-all">Ver toda la selección</button></div>
-        <p class="catalog-disclaimer">Selección visual de referencia. Consultá modelos, talles, colores, stock y precio.</p>
+        <div class="empty-state" id="empty-state" hidden><h3>No encontramos esa selección</h3><p>Probá con otra búsqueda o elegí una categoría diferente.</p><button class="button button-dark" id="show-all">Ver toda la selección</button></div>
       </section>
 
-      <section class="closing-note">
-        <div class="closing-mark">U.</div><div><p class="eyebrow"><span class="eyebrow-line"></span>UN BUEN HALLAZGO CAMBIA EL DÍA</p><h2>Calidad para tu<br /><em>día a día.</em></h2></div>
-        <a href="#catalogo" class="closing-link">VOLVER A EXPLORAR <span>↗</span></a>
-        <div class="closing-ornament" aria-hidden="true">URBANEROS</div>
+      <section class="closing-note featured-section" id="destacado" hidden>
+        <div class="featured-heading"><p class="eyebrow"><span class="eyebrow-line"></span>LA ELECCIÓN DE URBANEROS</p><h2>Destacado de la<br /><em>semana</em></h2></div>
+        <article class="featured-product" id="featured-product-card" hidden aria-label="Producto destacado de la semana">
+          <div class="featured-photo"><img id="featured-image" src="" alt="" loading="lazy" /></div>
+          <div class="featured-copy"><p class="featured-category" id="featured-category"></p><h3 id="featured-name"></h3><p id="featured-detail"></p><div class="featured-prices"><del id="featured-old-price"></del><strong id="featured-price"></strong></div></div>
+        </article>
       </section>
     </main>
 
-    <footer class="site-footer"><a class="wordmark footer-wordmark" href="#inicio">URBAN<span>EROS</span></a><span>ESTILO, OBJETOS Y DETALLES.</span><a href="#catalogo">EXPLORAR SELECCIÓN ↑</a></footer>
+    <footer class="site-footer"><a class="wordmark footer-wordmark" href="#inicio" aria-label="Urbaneros, volver al inicio"><img src="./logo-urbaneros.jpeg" alt="" /><span>URBANEROS</span></a><span class="footer-tagline">CALIDAD - EXCLUSIVIDAD - TENDENCIA</span><a class="footer-explore" href="#catalogo">EXPLORAR SELECCIÓN<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M10.5 6h-8m3-3-3 3 3 3" /></svg></a></footer>
 
     <section class="admin-panel" id="admin-panel" hidden aria-labelledby="admin-title">
       <div class="admin-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span>ACCESO PRIVADO</p><h2 id="admin-title">Administrar <em>Urbaneros</em></h2></div><button class="admin-close" id="admin-close" type="button" aria-label="Cerrar administración">×</button></div>
@@ -103,10 +108,18 @@
       </div>
       <div class="admin-workspace" id="admin-workspace" hidden>
         <div class="admin-workspace-top"><p>Desde aquí puedes agregar, editar o quitar productos. Los cambios se guardan en el catálogo público.</p><button class="admin-logout" id="admin-logout" type="button">Cerrar sesión</button></div>
+        <p class="admin-entry-note" id="featured-migration-warning" hidden>Para habilitar el producto semanal y agregar categorías, primero hay que actualizar Supabase.</p>
+        <section class="category-manager" aria-labelledby="category-manager-title">
+          <h3 id="category-manager-title">Categorías</h3>
+          <p>Agrega nuevas categorías para que aparezcan en el catálogo y puedas asignarlas a los productos.</p>
+          <form id="category-form"><label for="category-name">Nombre de la nueva categoría</label><div class="category-form-row"><input id="category-name" name="name" maxlength="50" placeholder="Ej.: Mochilas" required /><button class="button-gold" id="add-category" type="submit">Agregar categoría</button></div><p class="admin-status" id="category-status" role="status"></p></form>
+          <div class="category-list" id="category-list" aria-label="Categorías actuales"></div>
+        </section>
         <form id="product-form" class="product-form">
           <input name="id" type="hidden" />
           <h3 id="product-form-title">Agregar producto</h3>
-          <div class="admin-fields"><label>Nombre<input name="name" maxlength="100" required /></label><label>Categoría<select name="category" required><option value="">Elegir categoría</option><option>Calzado</option><option>Indumentaria masculina</option><option>Indumentaria femenina</option><option>Carteras</option><option>iPhone</option><option>Cases exclusivos</option><option>Lentes de sol</option><option>Relojes originales</option><option>Perfumes</option></select></label><label>Descripción<input name="detail" maxlength="180" required /></label><label>Precio (opcional)<input name="price" maxlength="80" placeholder="Ej.: $ 2.490" /></label></div>
+          <div class="admin-fields"><label>Nombre<input name="name" maxlength="100" required /></label><label>Categoría<select name="category" required><option value="">Elegir categoría</option><option>Calzado</option><option>Indumentaria masculina</option><option>Indumentaria femenina</option><option>Carteras</option><option value="iPhone">Apple</option><option>Cases exclusivos</option><option>Lentes de sol</option><option>Relojes originales</option><option>Perfumes</option></select></label><label>Descripción<input name="detail" maxlength="180" required /></label><label>Precio actual (oferta si es destacado)<input name="price" maxlength="80" placeholder="Ej.: $ 2.490" /></label><label>Precio anterior (solo destacado)<input name="compare_at_price" maxlength="80" placeholder="Ej.: $ 3.200" /></label></div>
+          <label class="featured-toggle"><input name="is_featured" type="checkbox" /> Destacar como producto de la semana</label>
           <label class="photo-picker">Fotos del producto <span>(puedes elegir hasta 3)</span><input name="photos" type="file" accept="image/*" multiple /></label>
           <div class="admin-actions"><button class="button button-gold" type="submit" id="save-product">Guardar producto</button><button class="admin-cancel" id="cancel-edit" type="button" hidden>Cancelar edición</button></div>
           <p class="admin-status" id="product-status" role="status"></p>
@@ -117,9 +130,9 @@
     <div class="admin-backdrop" id="admin-backdrop" hidden></div>
 
     <dialog class="product-dialog" id="product-dialog" aria-labelledby="dialog-title">
-      <button class="dialog-close" id="dialog-close" aria-label="Cerrar">×</button>
+      <button class="dialog-close" id="dialog-close" type="button" aria-label="Cerrar producto">×</button>
       <div class="dialog-image"><img id="dialog-image" src="" alt="" /></div>
-      <div class="dialog-copy"><p class="eyebrow" id="dialog-category"></p><h2 id="dialog-title"></h2><p class="dialog-price" id="dialog-price"></p><div class="product-thumbnails" id="product-thumbnails" hidden></div><p class="dialog-description">Consultá precio, disponibilidad, colores y detalles de este producto.</p><label for="message-text" class="message-label">TU MENSAJE</label><textarea id="message-text" readonly rows="3"></textarea><button class="button button-dark copy-button" id="copy-message">Consultar por WhatsApp <span>↗</span></button><p class="contact-note" id="contact-note">Te respondemos por WhatsApp.</p></div>
+      <div class="dialog-copy"><p class="eyebrow" id="dialog-category"></p><h2 id="dialog-title"></h2><p class="dialog-price" id="dialog-price"></p><div class="product-thumbnails" id="product-thumbnails" hidden></div><p class="dialog-description">Consultá disponibilidad de este producto.</p><label for="message-text" class="message-label">TU MENSAJE</label><textarea id="message-text" rows="4" aria-label="Mensaje editable para WhatsApp"></textarea><p class="contact-note" id="contact-note">Puedes editar este mensaje antes de abrir WhatsApp.</p><button class="button button-dark copy-button" id="copy-message" type="button">Consultar por WhatsApp</button><button class="dialog-return" id="dialog-return" type="button">Volver al catálogo</button></div>
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </body>
