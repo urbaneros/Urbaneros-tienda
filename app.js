@@ -30,7 +30,10 @@ let activeCategory = "Todo";
 let onlySaved = false;
 let saved = new Set();
 let activeProductPhotos = [];
+let photoDraft = [];
+let savingProduct = false;
 const cardPhotoIndices = new Map();
+let featuredIndex = 0;
 let currentAdmin = false;
 let featuredFieldsReady = true;
 let categoriesTableReady = false;
@@ -100,7 +103,7 @@ function render() {
     const photoIndex = Math.min(cardPhotoIndices.get(productId) || 0, Math.max(0, photoCount - 1));
     const cardPhotos = photoCount ? photosOf(product) : [mainPhoto(product)];
     const isSaved = saved.has(String(product.id));
-    const hasDiscount = Boolean(product.is_featured && product.compare_at_price && product.price);
+    const hasDiscount = Boolean(product.compare_at_price && product.price);
     return `<article class="product-card" data-product-id="${safe(product.id)}">
       <div class="product-image-wrap">
         <div class="card-photo-scroller">${cardPhotos.map((photo, index) => `<img src="${safe(photo)}" alt="${safe(product.name)}${photoCount > 1 ? `, foto ${index + 1} de ${photoCount}` : ""}" loading="lazy" draggable="false" />`).join("")}</div>
@@ -110,7 +113,7 @@ function render() {
         <button class="quick-view" data-view="${safe(product.id)}">Ver producto</button>
       </div>
       <div class="product-price${hasDiscount ? " product-price-sale" : ""}">${hasDiscount ? `<span class="sale-label">OFERTA</span><del>${safe(product.compare_at_price)}</del><strong>${safe(product.price)}</strong>` : safe(product.price || "Consultar precio")}</div>
-      <div class="product-info"><div><h3>${safe(product.name)}</h3><p>${safe(product.category)} · ${safe(product.detail)}</p></div></div>
+      <div class="product-info"><div><h3>${safe(product.name)}</h3><p><span class="product-card-category">${safe(categoryLabel(product.category))}</span><span class="product-card-separator"> · </span><span class="product-card-description">${safe(product.detail)}</span></p></div></div>
     </article>`;
   }).join("");
   grid.querySelectorAll(".card-photo-scroller").forEach(scroller => {
@@ -144,19 +147,23 @@ function render() {
 }
 function renderFeaturedProduct() {
   const section = document.querySelector("#destacado");
-  const product = products.find(item => item.is_featured);
-  section.hidden = !product;
-  document.querySelector("#featured-product-card").hidden = !product;
-  if (!product) return;
-  const image = document.querySelector("#featured-image");
-  image.src = mainPhoto(product) || "";
-  image.alt = product.name || "Producto destacado de Urbaneros";
-  document.querySelector("#featured-category").textContent = product.category || "";
-  document.querySelector("#featured-name").textContent = product.name || "";
-  document.querySelector("#featured-detail").textContent = product.detail || "";
-  document.querySelector("#featured-old-price").textContent = product.compare_at_price || "";
-  document.querySelector("#featured-price").textContent = product.price || "Consultar precio";
-  document.querySelector("#featured-product-card").setAttribute("aria-label", `Ver ${product.name} y consultar`);
+  const featured = products.filter(item => item.is_featured);
+  section.hidden = featured.length === 0;
+  const track = document.querySelector("#featured-track");
+  const controls = document.querySelector("#featured-controls");
+  track.innerHTML = featured.map(product => {
+    const hasDiscount = Boolean(product.compare_at_price && product.price);
+    return `<article class="featured-product" role="button" tabindex="0" data-featured-id="${safe(product.id)}" aria-label="Ver ${safe(product.name)} y consultar">
+      <div class="featured-photo"><img src="${safe(mainPhoto(product))}" alt="${safe(product.name)}" loading="lazy" /></div>
+      <div class="featured-copy"><p class="featured-category">${safe(categoryLabel(product.category))}</p><h3>${safe(product.name)}</h3><p>${safe(product.detail)}</p><div class="featured-prices">${hasDiscount ? `<span class="featured-sale-label">OFERTA</span><del>${safe(product.compare_at_price)}</del>` : ""}<strong>${safe(product.price || "Consultar precio")}</strong></div><span class="featured-cta">Ver producto y consultar <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11m-4-4 4 4-4 4" /></svg></span></div>
+    </article>`;
+  }).join("");
+  controls.hidden = featured.length < 2;
+  document.querySelector("#featured-heading-title").innerHTML = `${featured.length === 1 ? "Destacado" : "Destacados"} de la<br /><em>semana</em>`;
+  if (!featured.length) { featuredIndex = 0; return; }
+  featuredIndex = Math.min(featuredIndex, featured.length - 1);
+  document.querySelector("#featured-position").textContent = `${featuredIndex + 1} / ${featured.length}`;
+  if (featuredIndex) track.scrollLeft = featuredIndex * track.clientWidth;
 }
 function openProduct(product) {
   activeProductPhotos = photosOf(product);
@@ -166,8 +173,11 @@ function openProduct(product) {
   image.alt = product.name;
   document.querySelector("#dialog-category").textContent = categoryLabel(product.category);
   document.querySelector("#dialog-title").textContent = product.name;
+  const description = document.querySelector("#dialog-product-description");
+  description.textContent = product.detail || "";
+  description.hidden = !product.detail;
   const dialogPrice = document.querySelector("#dialog-price");
-  const hasDiscount = Boolean(product.is_featured && product.compare_at_price && product.price);
+  const hasDiscount = Boolean(product.compare_at_price && product.price);
   dialogPrice.classList.toggle("dialog-price-sale", hasDiscount);
   dialogPrice.innerHTML = hasDiscount ? `<span>OFERTA</span><del>${safe(product.compare_at_price)}</del><strong>${safe(product.price)}</strong>` : safe(product.price || "Consultar precio");
   const thumbnails = document.querySelector("#product-thumbnails");
@@ -232,10 +242,23 @@ async function loadCategories() {
 function renderAdminList() {
   const holder = document.querySelector("#admin-product-list");
   if (!currentAdmin) return;
-  holder.innerHTML = products.length ? products.map(product => `<div class="admin-product-row"><div class="admin-product-thumb">${photosOf(product)[0] ? `<img src="${safe(photosOf(product)[0])}" alt="" />` : ""}</div><div class="admin-product-description"><strong>${safe(product.name)}</strong><span>${safe(categoryLabel(product.category))} · ${safe(product.price || "Sin precio")}${product.is_featured ? " · Destacado semanal" : ""}</span></div><button type="button" data-edit-product="${safe(product.id)}">Editar</button><button type="button" class="admin-delete" data-delete-product="${safe(product.id)}">Quitar</button></div>`).join("") : `<p class="admin-empty">Aún no agregaste productos.</p>`;
+  holder.innerHTML = products.length ? products.map(product => `<div class="admin-product-row"><div class="admin-product-thumb">${photosOf(product)[0] ? `<img src="${safe(photosOf(product)[0])}" alt="" />` : ""}</div><div class="admin-product-description"><strong>${safe(product.name)}</strong><span>${safe(categoryLabel(product.category))} · ${safe(product.price || "Sin precio")}${product.compare_at_price && product.price ? " · Oferta" : ""}${product.is_featured ? " · Destacado semanal" : ""}</span></div><button type="button" data-edit-product="${safe(product.id)}">Editar</button><button type="button" class="admin-delete" data-delete-product="${safe(product.id)}">Quitar</button></div>`).join("") : `<p class="admin-empty">Aún no agregaste productos.</p>`;
+}
+function renderPhotoDraft() {
+  const holder = document.querySelector("#photo-order-preview");
+  holder.innerHTML = photoDraft.map((photo, index) => `<div class="photo-order-item">
+    <div class="photo-order-image"><img src="${safe(photo.kind === "new" ? photo.previewUrl : photo.url)}" alt="Vista previa de la foto ${index + 1}" /><span>${index + 1}${index === 0 ? " · Principal" : ""}</span></div>
+    <div class="photo-order-actions"><button type="button" data-photo-move="-1" data-photo-index="${index}" ${index === 0 ? "disabled" : ""} aria-label="Mover foto ${index + 1} hacia la izquierda">Izquierda</button><button type="button" data-photo-move="1" data-photo-index="${index}" ${index === photoDraft.length - 1 ? "disabled" : ""} aria-label="Mover foto ${index + 1} hacia la derecha">Derecha</button><button type="button" class="photo-order-remove" data-photo-remove="${index}" aria-label="Quitar foto ${index + 1}">Quitar</button></div>
+  </div>`).join("");
+}
+function clearPhotoDraft() {
+  photoDraft.forEach(photo => { if (photo.kind === "new") URL.revokeObjectURL(photo.previewUrl); });
+  photoDraft = [];
+  renderPhotoDraft();
 }
 function resetProductForm() {
   productForm.reset();
+  clearPhotoDraft();
   productForm.elements.id.value = "";
   document.querySelector("#product-form-title").textContent = "Agregar producto";
   document.querySelector("#save-product").textContent = "Guardar producto";
@@ -245,6 +268,10 @@ function resetProductForm() {
   setStatus(document.querySelector("#product-status"), "");
 }
 function editProduct(product) {
+  if (savingProduct) return;
+  clearPhotoDraft();
+  photoDraft = photosOf(product).map(url => ({ kind: "stored", url }));
+  renderPhotoDraft();
   productForm.elements.id.value = product.id;
   productForm.elements.name.value = product.name || "";
   productForm.elements.category.value = product.category || "";
@@ -259,8 +286,7 @@ function editProduct(product) {
   document.querySelector("#cancel-edit").hidden = false;
   document.querySelector("#product-form-title").scrollIntoView({ behavior: "smooth", block: "center" });
 }
-async function uploadPhotos(files) {
-  const urls = [];
+async function uploadPhotos(files, urls = []) {
   for (const file of files) {
     const cleanName = file.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-100) || "foto.jpg";
     const path = `${crypto.randomUUID()}-${cleanName}`;
@@ -325,16 +351,51 @@ grid.addEventListener("click", event => {
   const product = products.find(item => String(item.id) === viewButton?.dataset.view);
   if (product) openProduct(product);
 });
-const featuredCard = document.querySelector("#featured-product-card");
-function openFeaturedProduct() {
-  const product = products.find(item => item.is_featured);
-  if (product) openProduct(product);
+const featuredTrack = document.querySelector("#featured-track");
+function moveFeatured(step) {
+  const total = featuredTrack.children.length;
+  if (total < 2) return;
+  featuredIndex = (featuredIndex + step + total) % total;
+  featuredTrack.scrollTo({ left: featuredIndex * featuredTrack.clientWidth, behavior: "smooth" });
+  document.querySelector("#featured-position").textContent = `${featuredIndex + 1} / ${total}`;
 }
-featuredCard.addEventListener("click", openFeaturedProduct);
-featuredCard.addEventListener("keydown", event => {
+document.querySelector("#featured-prev").addEventListener("click", () => moveFeatured(-1));
+document.querySelector("#featured-next").addEventListener("click", () => moveFeatured(1));
+featuredTrack.addEventListener("scroll", () => {
+  if (!featuredTrack.clientWidth || !featuredTrack.children.length) return;
+  featuredIndex = Math.max(0, Math.min(featuredTrack.children.length - 1, Math.round(featuredTrack.scrollLeft / featuredTrack.clientWidth)));
+  document.querySelector("#featured-position").textContent = `${featuredIndex + 1} / ${featuredTrack.children.length}`;
+}, { passive: true });
+let featuredTouchStart = null;
+let featuredSwipeMoved = false;
+featuredTrack.addEventListener("touchstart", event => {
+  if (event.touches.length !== 1) return;
+  featuredTouchStart = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+  featuredSwipeMoved = false;
+}, { passive: true });
+featuredTrack.addEventListener("touchmove", event => {
+  if (!featuredTouchStart || !event.touches.length) return;
+  const dx = event.touches[0].clientX - featuredTouchStart.x;
+  const dy = event.touches[0].clientY - featuredTouchStart.y;
+  if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) featuredSwipeMoved = true;
+}, { passive: true });
+featuredTrack.addEventListener("touchend", () => {
+  featuredTouchStart = null;
+  if (featuredSwipeMoved) setTimeout(() => { featuredSwipeMoved = false; }, 350);
+}, { passive: true });
+featuredTrack.addEventListener("click", event => {
+  if (featuredSwipeMoved) { featuredSwipeMoved = false; return; }
+  const card = event.target.closest("[data-featured-id]");
+  const product = products.find(item => String(item.id) === card?.dataset.featuredId);
+  if (product) openProduct(product);
+});
+featuredTrack.addEventListener("keydown", event => {
   if (event.key !== "Enter" && event.key !== " ") return;
+  const card = event.target.closest("[data-featured-id]");
+  if (!card) return;
   event.preventDefault();
-  openFeaturedProduct();
+  const product = products.find(item => String(item.id) === card.dataset.featuredId);
+  if (product) openProduct(product);
 });
 search.addEventListener("input", render);
 document.querySelector("#saved-button").addEventListener("click", () => {
@@ -374,8 +435,35 @@ document.querySelector("#admin-entry").addEventListener("click", showAdminPanel)
 document.querySelector("#admin-close").addEventListener("click", closeAdminPanel);
 document.querySelector("#admin-backdrop").addEventListener("click", closeAdminPanel);
 window.addEventListener("hashchange", () => { if (location.hash === "#admin") showAdminPanel(); });
-document.querySelector("#admin-logout").addEventListener("click", async () => { await supabaseClient.auth.signOut(); currentAdmin = false; document.querySelector("#admin-entry").hidden = true; closeAdminPanel(); });
+document.querySelector("#admin-logout").addEventListener("click", async () => { if (savingProduct) return; await supabaseClient.auth.signOut(); currentAdmin = false; resetProductForm(); document.querySelector("#admin-entry").hidden = true; closeAdminPanel(); });
 document.querySelector("#cancel-edit").addEventListener("click", resetProductForm);
+productForm.elements.photos.addEventListener("change", event => {
+  const files = [...event.target.files];
+  event.target.value = "";
+  if (!files.length) return;
+  const status = document.querySelector("#product-status");
+  if (photoDraft.length + files.length > 3) return setStatus(status, "Puedes tener como máximo 3 fotos. Quita una de la vista previa antes de agregar otra.", true);
+  if (files.some(file => !file.type.startsWith("image/"))) return setStatus(status, "Elige solamente archivos de imagen.", true);
+  photoDraft.push(...files.map(file => ({ kind: "new", file, previewUrl: URL.createObjectURL(file) })));
+  renderPhotoDraft();
+  setStatus(status, "Ordená las fotos como quieras y luego guardá el producto.");
+});
+document.querySelector("#photo-order-preview").addEventListener("click", event => {
+  const moveButton = event.target.closest("[data-photo-move]");
+  const removeButton = event.target.closest("[data-photo-remove]");
+  if (moveButton) {
+    const index = Number(moveButton.dataset.photoIndex);
+    const next = index + Number(moveButton.dataset.photoMove);
+    if (next < 0 || next >= photoDraft.length) return;
+    [photoDraft[index], photoDraft[next]] = [photoDraft[next], photoDraft[index]];
+    renderPhotoDraft();
+  } else if (removeButton) {
+    const index = Number(removeButton.dataset.photoRemove);
+    const [removed] = photoDraft.splice(index, 1);
+    if (removed?.kind === "new") URL.revokeObjectURL(removed.previewUrl);
+    renderPhotoDraft();
+  }
+});
 
 loginForm.addEventListener("submit", async event => {
   event.preventDefault();
@@ -404,24 +492,27 @@ productForm.addEventListener("submit", async event => {
   if (!currentAdmin) return;
   const status = document.querySelector("#product-status");
   const button = document.querySelector("#save-product");
-  const files = [...productForm.elements.photos.files];
-  if (files.length > 3) return setStatus(status, "Puedes elegir como máximo 3 fotos.", true);
+  if (!photoDraft.length || photoDraft.length > 3) return setStatus(status, "El producto necesita entre 1 y 3 fotos.", true);
+  const draft = photoDraft.slice();
   const currency = productForm.elements.currency.value;
   const price = formatPrice(productForm.elements.price.value, currency);
   const compareAtPrice = formatPrice(productForm.elements.compare_at_price.value, currency);
   if (price === null || compareAtPrice === null) return setStatus(status, "Escribe solo números; usa punto para miles y coma para centavos. Ejemplo: 1.990", true);
-  if (productForm.elements.is_featured.checked && (!price || !compareAtPrice)) return setStatus(status, "Para el producto semanal, completa el precio de oferta y el precio anterior.", true);
+  if (compareAtPrice && !price) return setStatus(status, "Para mostrar una oferta, completá también el precio actual.", true);
+  savingProduct = true;
   button.disabled = true;
+  productForm.elements.photos.disabled = true;
+  document.querySelector("#cancel-edit").disabled = true;
+  document.querySelectorAll("#photo-order-preview button").forEach(control => { control.disabled = true; });
   setStatus(status, "Guardando producto…");
+  const uploadedUrls = [];
+  let savedRecord = false;
   try {
     const id = productForm.elements.id.value || null;
     const previous = id ? products.find(product => String(product.id) === id) : null;
-    const photos = files.length ? await uploadPhotos(files) : photosOf(previous || {});
-    if (!photos.length) throw new Error("Elige al menos una foto para el producto.");
-    if (productForm.elements.is_featured.checked) {
-      const { error: clearFeaturedError } = await supabaseClient.from("products").update({ is_featured: false }).eq("is_featured", true).neq("id", id || "00000000-0000-0000-0000-000000000000");
-      if (clearFeaturedError) throw clearFeaturedError;
-    }
+    await uploadPhotos(draft.filter(photo => photo.kind === "new").map(photo => photo.file), uploadedUrls);
+    let nextUploaded = 0;
+    const photos = draft.map(photo => photo.kind === "stored" ? photo.url : uploadedUrls[nextUploaded++]);
     const record = {
       ...(id ? { id } : {}),
       category: productForm.elements.category.value,
@@ -429,25 +520,37 @@ productForm.addEventListener("submit", async event => {
       detail: productForm.elements.detail.value.trim(),
       price,
       is_featured: productForm.elements.is_featured.checked,
-      compare_at_price: productForm.elements.is_featured.checked ? compareAtPrice : "",
+      compare_at_price: compareAtPrice,
       photos
     };
     const { error } = await supabaseClient.from("products").upsert(record).select().single();
     if (error) throw error;
-    if (files.length && previous) {
-      const oldPaths = photosOf(previous).map(storagePathFromUrl).filter(Boolean);
-      if (oldPaths.length) await supabaseClient.storage.from(BUCKET).remove(oldPaths);
+    savedRecord = true;
+    if (previous) {
+      const oldPaths = photosOf(previous).filter(url => !photos.includes(url)).map(storagePathFromUrl).filter(Boolean);
+      if (oldPaths.length) { try { await supabaseClient.storage.from(BUCKET).remove(oldPaths); } catch {} }
     }
     resetProductForm();
     setStatus(status, "Producto guardado. Ya aparece en el catálogo.");
     await loadProducts();
     renderAdminList();
   } catch (error) {
+    if (!savedRecord && uploadedUrls.length) {
+      const paths = uploadedUrls.map(storagePathFromUrl).filter(Boolean);
+      if (paths.length) { try { await supabaseClient.storage.from(BUCKET).remove(paths); } catch {} }
+    }
     setStatus(status, error.message || "No pudimos guardar el producto. Revisa la conexión.", true);
-  } finally { button.disabled = false; }
+  } finally {
+    savingProduct = false;
+    button.disabled = false;
+    productForm.elements.photos.disabled = false;
+    document.querySelector("#cancel-edit").disabled = false;
+    renderPhotoDraft();
+  }
 });
 
 document.querySelector("#admin-product-list").addEventListener("click", async event => {
+  if (savingProduct) return;
   const editButton = event.target.closest("[data-edit-product]");
   if (editButton) {
     const product = products.find(item => String(item.id) === editButton.dataset.editProduct);

@@ -8,8 +8,8 @@ ANTES DE PUBLICAR
 3. En Supabase Authentication, desactiva los registros públicos de usuarios. Deja creado solo tu usuario administrador. No agregues más usuarios.
 4. Usa solamente la clave Publishable (sb_publishable_...). No copies claves Secret (sb_secret_...) al código de la tienda.
 
-PRODUCTO DESTACADO DE LA SEMANA
-Si ya ejecutaste la configuración inicial de Supabase, antes de subir esta versión abre Supabase > SQL Editor > New query, pega y ejecuta el contenido de urbaneros-producto-destacado-migracion-privada.sql (archivo privado que está fuera de esta carpeta). No subas ese SQL al repositorio público. La actualización habilita el producto semanal y las opciones para agregar y cambiar nombres de categorías desde el panel privado. Después podrás destacar un producto, indicar precio de oferta y precio anterior, y administrar categorías. Solo puede haber un producto destacado a la vez.
+DESTACADOS Y OFERTAS
+La configuración de Supabase que ya habilitó el destacado y las categorías también sirve para esta versión; no hace falta volver a ejecutar SQL. Desde el panel privado puedes marcar varios productos como destacados. Los visitantes pasan entre ellos con las flechas o deslizando en el celular. Para mostrar OFERTA en cualquier producto, completa el precio actual y el precio anterior, aunque no lo marques como destacado.
 
 PUBLICAR EN GITHUB
 1. Crea un repositorio público nuevo dedicado solo a la tienda; deja privado tu repositorio actual.
