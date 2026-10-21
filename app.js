@@ -32,6 +32,7 @@ let saved = new Set();
 let activeProductPhotos = [];
 let photoDraft = [];
 let savingProduct = false;
+let savingStock = false;
 const cardPhotoIndices = new Map();
 let featuredIndex = 0;
 let currentAdmin = false;
@@ -450,6 +451,41 @@ document.querySelector("#admin-backdrop").addEventListener("click", closeAdminPa
 window.addEventListener("hashchange", () => { if (location.hash === "#admin") showAdminPanel(); });
 document.querySelector("#admin-logout").addEventListener("click", async () => { if (savingProduct) return; await supabaseClient.auth.signOut(); currentAdmin = false; resetProductForm(); document.querySelector("#admin-entry").hidden = true; closeAdminPanel(); });
 document.querySelector("#cancel-edit").addEventListener("click", resetProductForm);
+productForm.elements.is_sold_out.addEventListener("change", async event => {
+  const checkbox = event.currentTarget;
+  const status = document.querySelector("#product-status");
+  const id = productForm.elements.id.value;
+  if (!id) return setStatus(status, "El estado se guardará cuando agregues el producto.");
+  const product = products.find(item => String(item.id) === id);
+  if (!product || !currentAdmin || !soldOutFieldReady || savingProduct || savingStock) {
+    checkbox.checked = product?.is_sold_out === true;
+    return setStatus(status, "No pudimos cambiar el estado en este momento. Intentá de nuevo.", true);
+  }
+  const nextState = checkbox.checked;
+  const saveButton = document.querySelector("#save-product");
+  const cancelButton = document.querySelector("#cancel-edit");
+  savingStock = true;
+  checkbox.disabled = true;
+  saveButton.disabled = true;
+  cancelButton.disabled = true;
+  setStatus(status, "Actualizando disponibilidad…");
+  try {
+    const { data, error } = await supabaseClient.from("products").update({ is_sold_out: nextState }).eq("id", id).select("id, is_sold_out").single();
+    if (error || !data || data.is_sold_out !== nextState) throw error || new Error("No se confirmó el cambio.");
+    product.is_sold_out = data.is_sold_out;
+    render();
+    renderAdminList();
+    setStatus(status, nextState ? "Producto marcado como AGOTADO. Ya se ve así en el catálogo." : "Producto disponible nuevamente en el catálogo.");
+  } catch {
+    checkbox.checked = product.is_sold_out === true;
+    setStatus(status, "No pudimos guardar el estado. Revisá la conexión o volvé a iniciar sesión.", true);
+  } finally {
+    savingStock = false;
+    checkbox.disabled = !soldOutFieldReady;
+    saveButton.disabled = false;
+    cancelButton.disabled = false;
+  }
+});
 productForm.elements.photos.addEventListener("change", event => {
   const files = [...event.target.files];
   event.target.value = "";
@@ -504,6 +540,7 @@ productForm.addEventListener("submit", async event => {
   event.preventDefault();
   if (!currentAdmin) return;
   const status = document.querySelector("#product-status");
+  if (savingStock) return setStatus(status, "Esperá a que termine de actualizarse la disponibilidad.");
   const button = document.querySelector("#save-product");
   if (!photoDraft.length || photoDraft.length > 3) return setStatus(status, "El producto necesita entre 1 y 3 fotos.", true);
   const draft = photoDraft.slice();
@@ -514,6 +551,7 @@ productForm.addEventListener("submit", async event => {
   if (compareAtPrice && !price) return setStatus(status, "Para mostrar una oferta, completá también el precio actual.", true);
   savingProduct = true;
   button.disabled = true;
+  productForm.elements.is_sold_out.disabled = true;
   productForm.elements.photos.disabled = true;
   document.querySelector("#cancel-edit").disabled = true;
   document.querySelectorAll("#photo-order-preview button").forEach(control => { control.disabled = true; });
@@ -557,6 +595,7 @@ productForm.addEventListener("submit", async event => {
   } finally {
     savingProduct = false;
     button.disabled = false;
+    productForm.elements.is_sold_out.disabled = !soldOutFieldReady;
     productForm.elements.photos.disabled = false;
     document.querySelector("#cancel-edit").disabled = false;
     renderPhotoDraft();

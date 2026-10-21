@@ -12,7 +12,7 @@ DESTACADOS Y OFERTAS
 La configuración de Supabase que ya habilitó el destacado y las categorías también sirve para esta versión; no hace falta volver a ejecutar SQL. Desde el panel privado puedes marcar varios productos como destacados. Los visitantes pasan entre ellos con las flechas o deslizando en el celular. Para mostrar OFERTA en cualquier producto, completa el precio actual y el precio anterior, aunque no lo marques como destacado.
 
 PRODUCTOS AGOTADOS
-Para esta función nueva, ejecuta una sola vez el archivo privado urbaneros-stock-agotado-migracion-privada.sql en Supabase > SQL Editor > New query. No subas ese archivo al repositorio público. Los productos existentes siguen disponibles. Después de actualizar la página, entra al panel de administración, edita un producto, marca “Marcar como agotado” y guarda. Para volver a mostrarlo como disponible, desmarca esa opción y guarda de nuevo.
+Para esta función nueva, ejecuta una sola vez el archivo privado urbaneros-stock-agotado-migracion-privada.sql en Supabase > SQL Editor > New query. No subas ese archivo al repositorio público. Los productos existentes siguen disponibles. Después de actualizar la página, entra al panel de administración y edita un producto. Al marcar “Marcar como agotado”, el estado se guarda inmediatamente. Al desmarcarlo, vuelve a estar disponible. En un producto nuevo, el estado se guarda al pulsar “Guardar producto”.
 
 PUBLICAR EN GITHUB
 1. Crea un repositorio público nuevo dedicado solo a la tienda; deja privado tu repositorio actual.
