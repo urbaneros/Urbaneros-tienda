@@ -36,6 +36,7 @@ const cardPhotoIndices = new Map();
 let featuredIndex = 0;
 let currentAdmin = false;
 let featuredFieldsReady = true;
+let soldOutFieldReady = true;
 let categoriesTableReady = false;
 
 const safe = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
@@ -85,8 +86,10 @@ function renderCategoryChoices() {
 }
 function updateAdminSchemaAccess() {
   document.querySelector("#featured-migration-warning").hidden = (featuredFieldsReady && categoriesTableReady) || !currentAdmin;
+  document.querySelector("#stock-migration-warning").hidden = soldOutFieldReady || !currentAdmin;
   productForm.elements.is_featured.disabled = !featuredFieldsReady;
   productForm.elements.compare_at_price.disabled = !featuredFieldsReady;
+  productForm.elements.is_sold_out.disabled = !soldOutFieldReady;
   document.querySelector("#category-name").disabled = !categoriesTableReady;
   document.querySelector("#add-category").disabled = !categoriesTableReady;
 }
@@ -104,10 +107,11 @@ function render() {
     const cardPhotos = photoCount ? photosOf(product) : [mainPhoto(product)];
     const isSaved = saved.has(String(product.id));
     const hasDiscount = Boolean(product.compare_at_price && product.price);
-    return `<article class="product-card" data-product-id="${safe(product.id)}">
+    const isSoldOut = product.is_sold_out === true;
+    return `<article class="product-card${isSoldOut ? " is-sold-out" : ""}" data-product-id="${safe(product.id)}">
       <div class="product-image-wrap">
         <div class="card-photo-scroller">${cardPhotos.map((photo, index) => `<img src="${safe(photo)}" alt="${safe(product.name)}${photoCount > 1 ? `, foto ${index + 1} de ${photoCount}` : ""}" loading="lazy" draggable="false" />`).join("")}</div>
-        <span class="image-category">${safe(categoryLabel(product.category))}</span>
+        ${isSoldOut ? '<span class="sold-out-badge">AGOTADO</span>' : `<span class="image-category">${safe(categoryLabel(product.category))}</span>`}
         <button class="favorite-button" data-save="${safe(product.id)}" aria-label="${isSaved ? "Quitar de favoritos" : "Guardar en favoritos"}" aria-pressed="${isSaved}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg></button>
         ${photoCount > 1 ? `<button class="card-photo-arrow card-photo-prev" type="button" data-photo-step="-1" data-photo-id="${safe(product.id)}" aria-label="Foto anterior de ${safe(product.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><button class="card-photo-arrow card-photo-next" type="button" data-photo-step="1" data-photo-id="${safe(product.id)}" aria-label="Foto siguiente de ${safe(product.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><span class="photo-count">${photoIndex + 1} / ${photoCount}</span>` : ""}
         <button class="quick-view" data-view="${safe(product.id)}">Ver producto</button>
@@ -153,8 +157,9 @@ function renderFeaturedProduct() {
   const controls = document.querySelector("#featured-controls");
   track.innerHTML = featured.map(product => {
     const hasDiscount = Boolean(product.compare_at_price && product.price);
-    return `<article class="featured-product" role="button" tabindex="0" data-featured-id="${safe(product.id)}" aria-label="Ver ${safe(product.name)} y consultar">
-      <div class="featured-photo"><img src="${safe(mainPhoto(product))}" alt="${safe(product.name)}" loading="lazy" /></div>
+    const isSoldOut = product.is_sold_out === true;
+    return `<article class="featured-product${isSoldOut ? " is-sold-out" : ""}" role="button" tabindex="0" data-featured-id="${safe(product.id)}" aria-label="Ver ${safe(product.name)}${isSoldOut ? ", agotado" : " y consultar"}">
+      <div class="featured-photo"><img src="${safe(mainPhoto(product))}" alt="${safe(product.name)}" loading="lazy" />${isSoldOut ? '<span class="sold-out-badge">AGOTADO</span>' : ""}</div>
       <div class="featured-copy"><p class="featured-category">${safe(categoryLabel(product.category))}</p><h3>${safe(product.name)}</h3><p>${safe(product.detail)}</p><div class="featured-prices">${hasDiscount ? `<span class="featured-sale-label">OFERTA</span><del>${safe(product.compare_at_price)}</del>` : ""}<strong>${safe(product.price || "Consultar precio")}</strong></div><span class="featured-cta">Ver producto y consultar <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11m-4-4 4 4-4 4" /></svg></span></div>
     </article>`;
   }).join("");
@@ -171,6 +176,9 @@ function openProduct(product) {
   const image = document.querySelector("#dialog-image");
   image.src = activeProductPhotos[0] || "";
   image.alt = product.name;
+  const isSoldOut = product.is_sold_out === true;
+  image.classList.toggle("sold-out-image", isSoldOut);
+  document.querySelector("#dialog-stock-status").hidden = !isSoldOut;
   document.querySelector("#dialog-category").textContent = categoryLabel(product.category);
   document.querySelector("#dialog-title").textContent = product.name;
   const description = document.querySelector("#dialog-product-description");
@@ -183,7 +191,8 @@ function openProduct(product) {
   const thumbnails = document.querySelector("#product-thumbnails");
   thumbnails.innerHTML = activeProductPhotos.map((photo, index) => `<button class="product-thumbnail ${index === 0 ? "active" : ""}" type="button" data-gallery-index="${index}" aria-label="Ver foto ${index + 1}"><img src="${safe(photo)}" alt="" /></button>`).join("");
   thumbnails.hidden = activeProductPhotos.length < 2;
-  document.querySelector("#message-text").value = `Hola, quiero consultar por ${product.name}. ¿Cuentan con stock disponible? Gracias.`;
+  document.querySelector("#dialog-description").textContent = isSoldOut ? "Este producto está agotado. Consultanos por su reposición." : "Consultá disponibilidad de este producto.";
+  document.querySelector("#message-text").value = isSoldOut ? `Hola, quiero consultar cuándo vuelve a estar disponible ${product.name}. Gracias.` : `Hola, quiero consultar por ${product.name}. ¿Cuentan con stock disponible? Gracias.`;
   dialog.showModal();
 }
 function showAdminPanel() {
@@ -211,7 +220,9 @@ async function loadProducts() {
     render();
     return;
   }
-  let { data, error } = await supabaseClient.from("products").select("id, category, name, detail, price, photos, is_featured, compare_at_price").order("created_at", { ascending: false });
+  let { data, error } = await supabaseClient.from("products").select("id, category, name, detail, price, photos, is_featured, compare_at_price, is_sold_out").order("created_at", { ascending: false });
+  soldOutFieldReady = !error;
+  if (error) ({ data, error } = await supabaseClient.from("products").select("id, category, name, detail, price, photos, is_featured, compare_at_price").order("created_at", { ascending: false }));
   featuredFieldsReady = !error;
   if (error) ({ data, error } = await supabaseClient.from("products").select("id, category, name, detail, price, photos").order("created_at", { ascending: false }));
   updateAdminSchemaAccess();
@@ -242,7 +253,7 @@ async function loadCategories() {
 function renderAdminList() {
   const holder = document.querySelector("#admin-product-list");
   if (!currentAdmin) return;
-  holder.innerHTML = products.length ? products.map(product => `<div class="admin-product-row"><div class="admin-product-thumb">${photosOf(product)[0] ? `<img src="${safe(photosOf(product)[0])}" alt="" />` : ""}</div><div class="admin-product-description"><strong>${safe(product.name)}</strong><span>${safe(categoryLabel(product.category))} · ${safe(product.price || "Sin precio")}${product.compare_at_price && product.price ? " · Oferta" : ""}${product.is_featured ? " · Destacado semanal" : ""}</span></div><button type="button" data-edit-product="${safe(product.id)}">Editar</button><button type="button" class="admin-delete" data-delete-product="${safe(product.id)}">Quitar</button></div>`).join("") : `<p class="admin-empty">Aún no agregaste productos.</p>`;
+  holder.innerHTML = products.length ? products.map(product => `<div class="admin-product-row"><div class="admin-product-thumb">${photosOf(product)[0] ? `<img src="${safe(photosOf(product)[0])}" alt="" />` : ""}</div><div class="admin-product-description"><strong>${safe(product.name)}</strong><span>${safe(categoryLabel(product.category))} · ${safe(product.price || "Sin precio")}${product.is_sold_out ? " · AGOTADO" : ""}${product.compare_at_price && product.price ? " · Oferta" : ""}${product.is_featured ? " · Destacado semanal" : ""}</span></div><button type="button" data-edit-product="${safe(product.id)}">Editar</button><button type="button" class="admin-delete" data-delete-product="${safe(product.id)}">Quitar</button></div>`).join("") : `<p class="admin-empty">Aún no agregaste productos.</p>`;
 }
 function renderPhotoDraft() {
   const holder = document.querySelector("#photo-order-preview");
@@ -264,6 +275,7 @@ function resetProductForm() {
   document.querySelector("#save-product").textContent = "Guardar producto";
   document.querySelector("#cancel-edit").hidden = true;
   productForm.elements.is_featured.checked = false;
+  productForm.elements.is_sold_out.checked = false;
   productForm.elements.compare_at_price.value = "";
   setStatus(document.querySelector("#product-status"), "");
 }
@@ -279,6 +291,7 @@ function editProduct(product) {
   productForm.elements.currency.value = priceCurrency(product.price || product.compare_at_price);
   productForm.elements.price.value = priceAmount(product.price);
   productForm.elements.is_featured.checked = Boolean(product.is_featured);
+  productForm.elements.is_sold_out.checked = product.is_sold_out === true;
   productForm.elements.compare_at_price.value = priceAmount(product.compare_at_price);
   productForm.elements.photos.value = "";
   document.querySelector("#product-form-title").textContent = "Editar producto";
@@ -521,6 +534,7 @@ productForm.addEventListener("submit", async event => {
       price,
       is_featured: productForm.elements.is_featured.checked,
       compare_at_price: compareAtPrice,
+      ...(soldOutFieldReady ? { is_sold_out: productForm.elements.is_sold_out.checked } : {}),
       photos
     };
     const { error } = await supabaseClient.from("products").upsert(record).select().single();

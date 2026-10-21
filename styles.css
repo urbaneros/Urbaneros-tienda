@@ -246,3 +246,10 @@ body .product-dialog #copy-message:hover{background:#d8b772;color:#171715}
 .card-photo-scroller::-webkit-scrollbar{display:none}
 .product-image-wrap .card-photo-scroller img{display:block;flex:0 0 100%;width:100%;height:100%;object-fit:cover;scroll-snap-align:start;transform:none!important;transition:none;user-select:none;-webkit-user-drag:none}
 @media(prefers-reduced-motion:reduce){.card-photo-scroller{scroll-behavior:auto}}
+.sold-out-badge{position:absolute;top:12px;left:12px;z-index:3;display:inline-flex;align-items:center;justify-content:center;padding:9px 12px;border:1px solid #ead49c;background:#c6a15a;color:#171715;box-shadow:0 3px 14px #0008;font:800 11px/1 "DM Sans",Arial,sans-serif;letter-spacing:.16em}
+.sold-out-badge[hidden]{display:none!important}
+.product-card.is-sold-out .card-photo-scroller img,.featured-product.is-sold-out .featured-photo img{opacity:.68}
+.featured-photo,.dialog-image{position:relative}
+.dialog-image img.sold-out-image{opacity:.72}
+.dialog-sold-out-badge{top:16px;left:16px;font-size:12px;padding:10px 14px}
+@media(max-width:760px){.sold-out-badge{top:9px;left:9px;padding:8px 10px;font-size:10px}.dialog-sold-out-badge{top:12px;left:12px}}
