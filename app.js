@@ -207,6 +207,7 @@ function openProduct(product) {
   document.querySelector("#dialog-description").textContent = isSoldOut ? "Este producto está agotado. Consultanos por su reposición." : "Consultá disponibilidad de este producto.";
   document.querySelector("#message-text").value = isSoldOut ? `Hola, quiero consultar cuándo vuelve a estar disponible ${product.name}. Gracias.` : `Hola, quiero consultar por ${product.name}. ¿Cuentan con stock disponible? Gracias.`;
   dialog.showModal();
+  dialog.querySelector(".dialog-content").scrollTop = 0;
 }
 function showAdminPanel() {
   adminPanel.hidden = false;

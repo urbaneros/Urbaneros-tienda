@@ -10,11 +10,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css?v=20261021-stock-v2" />
+    <link rel="stylesheet" href="./styles.css?v=20261024-dialog-v2" />
     <link rel="stylesheet" href="./admin.css?v=20261017-orden-fotos" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./supabase-config.js"></script>
-    <script src="./app.js?v=20261024-egress-v1" defer></script>
+    <script src="./app.js?v=20261024-dialog-v2" defer></script>
   </head>
   <body data-theme="noche">
     <div class="announcement"><span>UNA SELECCIÓN PARA TODOS LOS DÍAS</span><span class="announcement-note">Consultá disponibilidad y precio</span></div>
@@ -150,8 +150,10 @@
 
     <dialog class="product-dialog" id="product-dialog" aria-labelledby="dialog-title">
       <button class="dialog-close" id="dialog-close" type="button" aria-label="Cerrar producto">×</button>
-      <div class="dialog-image"><img id="dialog-image" src="" alt="" /><span class="sold-out-badge dialog-sold-out-badge" id="dialog-stock-status" hidden>AGOTADO</span></div>
-      <div class="dialog-copy"><p class="eyebrow" id="dialog-category"></p><h2 id="dialog-title"></h2><p class="dialog-price" id="dialog-price"></p><div class="product-thumbnails" id="product-thumbnails" hidden></div><p class="dialog-product-description" id="dialog-product-description" hidden></p><p class="dialog-description" id="dialog-description">Consultá disponibilidad de este producto.</p><label for="message-text" class="message-label">TU MENSAJE</label><textarea id="message-text" rows="4" aria-label="Mensaje editable para WhatsApp"></textarea><p class="contact-note" id="contact-note">Puedes editar este mensaje antes de abrir WhatsApp.</p><button class="button button-dark copy-button" id="copy-message" type="button">Consultar por WhatsApp</button><button class="dialog-return" id="dialog-return" type="button">Volver al catálogo</button></div>
+      <div class="dialog-content">
+        <div class="dialog-image"><img id="dialog-image" src="" alt="" draggable="false" decoding="async" /><span class="sold-out-badge dialog-sold-out-badge" id="dialog-stock-status" hidden>AGOTADO</span></div>
+        <div class="dialog-copy"><p class="eyebrow" id="dialog-category"></p><h2 id="dialog-title"></h2><p class="dialog-price" id="dialog-price"></p><div class="product-thumbnails" id="product-thumbnails" hidden></div><p class="dialog-product-description" id="dialog-product-description" hidden></p><p class="dialog-description" id="dialog-description">Consultá disponibilidad de este producto.</p><label for="message-text" class="message-label">TU MENSAJE</label><textarea id="message-text" rows="4" aria-label="Mensaje editable para WhatsApp"></textarea><p class="contact-note" id="contact-note">Puedes editar este mensaje antes de abrir WhatsApp.</p><button class="button button-dark copy-button" id="copy-message" type="button">Consultar por WhatsApp</button><button class="dialog-return" id="dialog-return" type="button">Volver al catálogo</button></div>
+      </div>
     </dialog>
     <a class="whatsapp-float" href="https://wa.me/59894094167?text=Hola%2C%20quiero%20consultar%20por%20los%20productos%20de%20Urbaneros.%20Gracias." target="_blank" rel="noopener noreferrer" aria-label="Escribinos por WhatsApp">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 11.8a8.1 8.1 0 0 1-11.9 7.1L4 20l1.2-4.1a8.1 8.1 0 1 1 15-4.1Z"/><path d="M9.1 8.6c.2-.4.4-.4.6-.4h.5c.2 0 .3.1.4.4l.6 1.4c.1.2.1.3-.1.5l-.5.6c-.2.2-.2.3 0 .5.5.8 1.2 1.4 2 1.8.2.1.4.1.5-.1l.7-.8c.2-.2.3-.2.5-.1l1.4.7c.2.1.3.2.3.4 0 .2-.1.8-.5 1.1-.4.4-1 .6-1.6.5-.6-.1-1.4-.4-2.4-.9-1.1-.6-2-1.5-2.6-2.3-.6-.8-.9-1.7-.9-2.3 0-.6.3-1.1.6-1.4Z"/></svg>
