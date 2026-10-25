@@ -24,6 +24,7 @@ const productForm = document.querySelector("#product-form");
 const categoryForm = document.querySelector("#category-form");
 const config = window.URBANEROS_CONFIG || {};
 const BUCKET = "catalogo";
+const TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
 let supabaseClient = null;
 let products = [];
 let activeCategory = "Todo";
@@ -111,7 +112,7 @@ function render() {
     const isSoldOut = product.is_sold_out === true;
     return `<article class="product-card${isSoldOut ? " is-sold-out" : ""}" data-product-id="${safe(product.id)}">
       <div class="product-image-wrap">
-        <div class="card-photo-scroller">${cardPhotos.map((photo, index) => `<img src="${safe(photo)}" alt="${safe(product.name)}${photoCount > 1 ? `, foto ${index + 1} de ${photoCount}` : ""}" loading="lazy" draggable="false" />`).join("")}</div>
+        <div class="card-photo-scroller">${cardPhotos.map((photo, index) => `<img src="${index === photoIndex ? safe(photo) : TRANSPARENT_PIXEL}" ${index === photoIndex ? "" : `data-src="${safe(photo)}"`} alt="${safe(product.name)}${photoCount > 1 ? `, foto ${index + 1} de ${photoCount}` : ""}" loading="lazy" draggable="false" />`).join("")}</div>
         ${isSoldOut ? '<span class="sold-out-badge">AGOTADO</span>' : `<span class="image-category">${safe(categoryLabel(product.category))}</span>`}
         <button class="favorite-button" data-save="${safe(product.id)}" aria-label="${isSaved ? "Quitar de favoritos" : "Guardar en favoritos"}" aria-pressed="${isSaved}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg></button>
         ${photoCount > 1 ? `<button class="card-photo-arrow card-photo-prev" type="button" data-photo-step="-1" data-photo-id="${safe(product.id)}" aria-label="Foto anterior de ${safe(product.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><button class="card-photo-arrow card-photo-next" type="button" data-photo-step="1" data-photo-id="${safe(product.id)}" aria-label="Foto siguiente de ${safe(product.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><span class="photo-count">${photoIndex + 1} / ${photoCount}</span>` : ""}
@@ -125,10 +126,12 @@ function render() {
     const card = scroller.closest(".product-card");
     const index = cardPhotoIndices.get(card.dataset.productId) || 0;
     if (index) scroller.scrollLeft = index * scroller.clientWidth;
+    scroller.addEventListener("touchstart", () => loadNearbyCardPhotos(scroller, 1), { passive: true });
     scroller.addEventListener("scroll", () => {
       const count = scroller.children.length;
       if (count < 2 || !scroller.clientWidth) return;
       const visible = Math.max(0, Math.min(count - 1, Math.round(scroller.scrollLeft / scroller.clientWidth)));
+      loadNearbyCardPhotos(scroller, visible);
       cardPhotoIndices.set(card.dataset.productId, visible);
       card.querySelector(".photo-count").textContent = `${visible + 1} / ${count}`;
     }, { passive: true });
@@ -149,6 +152,15 @@ function render() {
   document.querySelector("#saved-count").textContent = saved.size;
   document.querySelectorAll(".main-nav a").forEach(link => link.classList.toggle("active", link.dataset.navCategory === activeCategory));
   renderFeaturedProduct();
+}
+function loadNearbyCardPhotos(scroller, index) {
+  for (const offset of [-1, 0, 1]) {
+    const image = scroller.children[index + offset];
+    if (image?.dataset.src) {
+      image.src = image.dataset.src;
+      delete image.dataset.src;
+    }
+  }
 }
 function renderFeaturedProduct() {
   const section = document.querySelector("#destacado");
@@ -254,7 +266,7 @@ async function loadCategories() {
 function renderAdminList() {
   const holder = document.querySelector("#admin-product-list");
   if (!currentAdmin) return;
-  holder.innerHTML = products.length ? products.map(product => `<div class="admin-product-row"><div class="admin-product-thumb">${photosOf(product)[0] ? `<img src="${safe(photosOf(product)[0])}" alt="" />` : ""}</div><div class="admin-product-description"><strong>${safe(product.name)}</strong><span>${safe(categoryLabel(product.category))} · ${safe(product.price || "Sin precio")}${product.is_sold_out ? " · AGOTADO" : ""}${product.compare_at_price && product.price ? " · Oferta" : ""}${product.is_featured ? " · Destacado semanal" : ""}</span></div><button type="button" data-edit-product="${safe(product.id)}">Editar</button><button type="button" class="admin-delete" data-delete-product="${safe(product.id)}">Quitar</button></div>`).join("") : `<p class="admin-empty">Aún no agregaste productos.</p>`;
+  holder.innerHTML = products.length ? products.map(product => `<div class="admin-product-row"><div class="admin-product-thumb">${photosOf(product)[0] ? `<img src="${safe(photosOf(product)[0])}" alt="" loading="lazy" decoding="async" />` : ""}</div><div class="admin-product-description"><strong>${safe(product.name)}</strong><span>${safe(categoryLabel(product.category))} · ${safe(product.price || "Sin precio")}${product.is_sold_out ? " · AGOTADO" : ""}${product.compare_at_price && product.price ? " · Oferta" : ""}${product.is_featured ? " · Destacado semanal" : ""}</span></div><button type="button" data-edit-product="${safe(product.id)}">Editar</button><button type="button" class="admin-delete" data-delete-product="${safe(product.id)}">Quitar</button></div>`).join("") : `<p class="admin-empty">Aún no agregaste productos.</p>`;
 }
 function renderPhotoDraft() {
   const holder = document.querySelector("#photo-order-preview");
@@ -300,11 +312,37 @@ function editProduct(product) {
   document.querySelector("#cancel-edit").hidden = false;
   document.querySelector("#product-form-title").scrollIntoView({ behavior: "smooth", block: "center" });
 }
+async function optimizeImage(file) {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) return file;
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext("2d");
+    if (!context) return file;
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const type = file.type === "image/jpeg" ? "image/jpeg" : "image/webp";
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, type, 0.78));
+    if (!blob || blob.type !== type || blob.size >= file.size * 0.9) return file;
+    const extension = type === "image/webp" ? "webp" : "jpg";
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + "." + extension, { type });
+  } catch {
+    return file;
+  } finally {
+    bitmap?.close();
+  }
+}
 async function uploadPhotos(files, urls = []) {
-  for (const file of files) {
+  for (const original of files) {
+    const file = await optimizeImage(original);
     const cleanName = file.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-100) || "foto.jpg";
     const path = `${crypto.randomUUID()}-${cleanName}`;
-    const { error } = await supabaseClient.storage.from(BUCKET).upload(path, file, { upsert: false, contentType: file.type || "image/jpeg" });
+    const { error } = await supabaseClient.storage.from(BUCKET).upload(path, file, {
+      upsert: false, contentType: file.type || "image/jpeg", cacheControl: "31536000"
+    });
     if (error) throw error;
     urls.push(supabaseClient.storage.from(BUCKET).getPublicUrl(path).data.publicUrl);
   }
@@ -312,9 +350,11 @@ async function uploadPhotos(files, urls = []) {
 }
 function storagePathFromUrl(url) {
   try {
+    const parsed = new URL(url);
+    if (parsed.origin !== new URL(config.url).origin) return null;
     const marker = `/storage/v1/object/public/${BUCKET}/`;
-    const index = new URL(url).pathname.indexOf(marker);
-    return index >= 0 ? decodeURIComponent(new URL(url).pathname.slice(index + marker.length)) : null;
+    const index = parsed.pathname.indexOf(marker);
+    return index >= 0 ? decodeURIComponent(parsed.pathname.slice(index + marker.length)) : null;
   } catch { return null; }
 }
 
@@ -346,6 +386,7 @@ function changeCardPhoto(card, step) {
   const index = ((cardPhotoIndices.get(id) || 0) + step + photos.length) % photos.length;
   cardPhotoIndices.set(id, index);
   const scroller = card.querySelector(".card-photo-scroller");
+  loadNearbyCardPhotos(scroller, index);
   scroller.scrollTo({ left: index * scroller.clientWidth, behavior: "smooth" });
   card.querySelector(".photo-count").textContent = `${index + 1} / ${photos.length}`;
 }

@@ -1,0 +1,26 @@
+URBANEROS - VERSION OPTIMIZADA (24/10/2026)
+
+CONTENIDO
+Esta carpeta es el sitio completo para GitHub Pages. El ZIP no contiene otro ZIP ni una carpeta adicional. Incluye la tienda y la herramienta optimizar-fotos.html.
+
+QUE CAMBIO
+- Las fotos secundarias de las tarjetas se piden cuando se navega hacia ellas.
+- Las miniaturas del panel de administración usan carga diferida.
+- Las fotos nuevas JPG, PNG y WebP se reducen en el navegador antes de subirlas cuando el archivo resultante es al menos 10 % menor. Se conserva la proporción y se limita el lado mayor a 1600 px.
+- Las fotos nuevas usan rutas únicas y una caché de navegador prolongada.
+- optimizar-fotos.html permite procesar una sola vez las fotos existentes, sin volver a seleccionarlas manualmente. Requiere iniciar sesión como administrador. Guarda respaldo de las direcciones originales, permite descargarlo y no elimina los archivos originales.
+
+COMO PROBAR Y PUBLICAR
+1. Extraé este ZIP con "Extraer todo". Abrí index.html para inspeccionar el diseño; la carga del catálogo requiere conexión a Internet.
+2. Subí a la raíz del repositorio público el contenido de esta carpeta. No subas archivos privados de SQL ni claves secretas. El archivo supabase-config.js contiene solo una clave publicable.
+3. Comprobá el catálogo publicado, el recorrido de fotos, favoritos, búsqueda y el acceso de administración.
+4. Para optimizar las fotos existentes, abrí https://urbaneros.github.io/Urbaneros-tienda/optimizar-fotos.html después de publicar. Iniciá sesión, descargá el respaldo y pulsá "Crear respaldo y comenzar". Mantené la página abierta. Podés detenerla y ejecutarla nuevamente; las fotos originales permanecen en Supabase.
+5. Verificá visualmente una muestra de productos antes de considerar terminada la migración. Si alguna imagen no cumple la calidad esperada, el botón "Restaurar direcciones anteriores" revierte los productos sin cambios posteriores.
+
+SUPABASE Y TRANSFERENCIA
+El sitio publicado mostraba 196 productos en la revisión del 24/10/2026. El código anterior insertaba todas las fotos secundarias en las tarjetas y cargaba sin diferir las miniaturas de administración. Esto puede aumentar la transferencia, pero el código por sí solo no permite atribuir con certeza los 43 GB comunicados a una sola fuente. Para confirmar el origen, revisá en Supabase Usage el desglose de Egress y Cached Egress por servicio y las fechas de los picos. La optimización reduce tráfico futuro; no borra el consumo acumulado.
+
+La herramienta de migración descarga las fotos originales una vez para procesarlas. Si Supabase ya bloqueó las descargas, esperá a que vuelva a estar disponible antes de ejecutarla. No usa Image Transformations de Supabase, que no está disponible en el plan gratuito.
+
+LIMITACIONES
+No se ejecutó la migración real porque requiere tu sesión de administrador. La tienda publicada no se modificó desde este paquete.

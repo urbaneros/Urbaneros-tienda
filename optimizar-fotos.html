@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Urbaneros · Optimizar fotos existentes</title>
+  <style>
+    body{font:16px/1.5 system-ui,sans-serif;max-width:740px;margin:40px auto;padding:0 20px;color:#1d211e;background:#f5f2ec}
+    h1{line-height:1.2}section{background:white;padding:24px;margin:18px 0;border:1px solid #d9d5cd;border-radius:8px}
+    label{display:block;margin:12px 0}input{display:block;width:100%;box-sizing:border-box;padding:10px;margin-top:5px}
+    button{background:#1d211e;color:white;border:0;padding:12px 16px;margin:6px 8px 6px 0;cursor:pointer}button:disabled{opacity:.5;cursor:default}
+    progress{width:100%;height:20px}#log{white-space:pre-wrap;max-height:280px;overflow:auto;background:#f5f2ec;padding:12px;font-size:13px}
+    .warning{border-left:4px solid #c96642;padding-left:12px}a{color:#345848}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
+  <script src="./optimizar-fotos.js" defer></script>
+</head>
+<body>
+  <p><a href="./index.html">← Volver al catálogo</a></p>
+  <h1>Optimizar fotos existentes</h1>
+  <p>Esta herramienta procesa las fotos ya vinculadas a los productos. Conserva los archivos originales y guarda un respaldo de las direcciones anteriores. Puedes detenerla y retomarla luego.</p>
+  <p class="warning">Esto descargará cada foto original una vez desde Supabase y consumirá transferencia durante el proceso. Ejecutalo una sola vez, desde una conexión estable. No cierres esta página mientras trabaja.</p>
+  <section id="login-section">
+    <h2>Acceso de administrador</h2>
+    <form id="login-form">
+      <label>Correo electrónico<input name="email" type="email" autocomplete="username" required></label>
+      <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
+      <button type="submit">Iniciar sesión</button>
+    </form>
+  </section>
+  <section id="tools-section" hidden>
+    <h2>Fotos del catálogo</h2>
+    <p id="summary">Cargando productos…</p>
+    <button id="run" disabled>Crear respaldo y comenzar</button>
+    <button id="download-backup" disabled>Descargar último respaldo</button>
+    <button id="restore" disabled>Restaurar direcciones anteriores</button>
+    <p><progress id="progress" value="0" max="1"></progress></p>
+    <p id="status" role="status"></p>
+    <pre id="log"></pre>
+  </section>
+</body>
+</html>
