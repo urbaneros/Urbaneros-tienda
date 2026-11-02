@@ -24,7 +24,6 @@ const productForm = document.querySelector("#product-form");
 const categoryForm = document.querySelector("#category-form");
 const config = window.URBANEROS_CONFIG || {};
 const BUCKET = "catalogo";
-const TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
 let supabaseClient = null;
 let products = [];
 let activeCategory = "Todo";
@@ -34,6 +33,8 @@ let activeProductPhotos = [];
 let photoDraft = [];
 let savingProduct = false;
 let savingStock = false;
+let optimizingExistingPhotos = false;
+let stopOptimizationRequested = false;
 const cardPhotoIndices = new Map();
 let featuredIndex = 0;
 let currentAdmin = false;
@@ -80,11 +81,17 @@ function renderFilters() {
 function renderCategoryChoices() {
   const links = document.querySelector("#category-links");
   links.innerHTML = categories.filter(category => category.value !== "Todo").map(category => `<button data-category="${safe(category.value)}">${safe(category.label)}</button>`).join("");
+  document.querySelector("#main-nav").innerHTML = categories.filter(category => category.value !== "Todo").map(category => `<a href="#catalogo" data-nav-category="${safe(category.value)}">${safe(category.label)}</a>`).join("");
   const select = productForm.elements.category;
   const selected = select.value;
   select.innerHTML = `<option value="">Elegir categoría</option>${categories.filter(category => category.value !== "Todo").map(category => `<option value="${safe(category.value)}">${safe(category.label)}</option>`).join("")}`;
   select.value = selected;
-  document.querySelector("#category-list").innerHTML = categories.filter(category => category.value !== "Todo").map(category => `<div class="category-list-item"><span class="category-chip">${safe(category.label)}</span><button class="category-edit" type="button" data-edit-category="${safe(category.value)}"${categoriesTableReady ? "" : " disabled"}>Editar</button></div>`).join("");
+  const optimizationScope = document.querySelector("#optimization-scope");
+  const selectedScope = optimizationScope.value || "all";
+  optimizationScope.innerHTML = `<option value="all">Todo el catálogo</option>${categories.filter(category => category.value !== "Todo").map(category => `<option value="${safe(category.value)}">${safe(category.label)}</option>`).join("")}`;
+  optimizationScope.value = selectedScope;
+  if (!optimizationScope.value) optimizationScope.value = "all";
+  document.querySelector("#category-list").innerHTML = categories.filter(category => category.value !== "Todo").map(category => `<div class="category-list-item"><span class="category-chip">${safe(category.label)}</span><button class="category-edit" type="button" data-edit-category="${safe(category.value)}"${categoriesTableReady ? "" : " disabled"}>Editar</button><form class="category-edit-form" data-category-edit-form="${safe(category.value)}" hidden><label>Nuevo nombre<input name="label" type="text" value="${safe(category.label)}" minlength="2" maxlength="50" required /></label><div class="category-edit-actions"><button type="submit">Guardar</button><button type="button" data-cancel-category>Cancelar</button></div></form></div>`).join("");
 }
 function updateAdminSchemaAccess() {
   document.querySelector("#featured-migration-warning").hidden = (featuredFieldsReady && categoriesTableReady) || !currentAdmin;
@@ -112,7 +119,7 @@ function render() {
     const isSoldOut = product.is_sold_out === true;
     return `<article class="product-card${isSoldOut ? " is-sold-out" : ""}" data-product-id="${safe(product.id)}">
       <div class="product-image-wrap">
-        <div class="card-photo-scroller">${cardPhotos.map((photo, index) => `<img src="${index === photoIndex ? safe(photo) : TRANSPARENT_PIXEL}" ${index === photoIndex ? "" : `data-src="${safe(photo)}"`} alt="${safe(product.name)}${photoCount > 1 ? `, foto ${index + 1} de ${photoCount}` : ""}" loading="lazy" draggable="false" />`).join("")}</div>
+        <div class="card-photo-scroller">${cardPhotos.map((photo, index) => `<img src="${safe(photo)}" alt="${safe(product.name)}${photoCount > 1 ? `, foto ${index + 1} de ${photoCount}` : ""}" loading="lazy" draggable="false" />`).join("")}</div>
         ${isSoldOut ? '<span class="sold-out-badge">AGOTADO</span>' : `<span class="image-category">${safe(categoryLabel(product.category))}</span>`}
         <button class="favorite-button" data-save="${safe(product.id)}" aria-label="${isSaved ? "Quitar de favoritos" : "Guardar en favoritos"}" aria-pressed="${isSaved}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></svg></button>
         ${photoCount > 1 ? `<button class="card-photo-arrow card-photo-prev" type="button" data-photo-step="-1" data-photo-id="${safe(product.id)}" aria-label="Foto anterior de ${safe(product.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><button class="card-photo-arrow card-photo-next" type="button" data-photo-step="1" data-photo-id="${safe(product.id)}" aria-label="Foto siguiente de ${safe(product.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button><span class="photo-count">${photoIndex + 1} / ${photoCount}</span>` : ""}
@@ -126,12 +133,10 @@ function render() {
     const card = scroller.closest(".product-card");
     const index = cardPhotoIndices.get(card.dataset.productId) || 0;
     if (index) scroller.scrollLeft = index * scroller.clientWidth;
-    scroller.addEventListener("touchstart", () => loadNearbyCardPhotos(scroller, 1), { passive: true });
     scroller.addEventListener("scroll", () => {
       const count = scroller.children.length;
       if (count < 2 || !scroller.clientWidth) return;
       const visible = Math.max(0, Math.min(count - 1, Math.round(scroller.scrollLeft / scroller.clientWidth)));
-      loadNearbyCardPhotos(scroller, visible);
       cardPhotoIndices.set(card.dataset.productId, visible);
       card.querySelector(".photo-count").textContent = `${visible + 1} / ${count}`;
     }, { passive: true });
@@ -152,15 +157,6 @@ function render() {
   document.querySelector("#saved-count").textContent = saved.size;
   document.querySelectorAll(".main-nav a").forEach(link => link.classList.toggle("active", link.dataset.navCategory === activeCategory));
   renderFeaturedProduct();
-}
-function loadNearbyCardPhotos(scroller, index) {
-  for (const offset of [-1, 0, 1]) {
-    const image = scroller.children[index + offset];
-    if (image?.dataset.src) {
-      image.src = image.dataset.src;
-      delete image.dataset.src;
-    }
-  }
 }
 function renderFeaturedProduct() {
   const section = document.querySelector("#destacado");
@@ -207,7 +203,6 @@ function openProduct(product) {
   document.querySelector("#dialog-description").textContent = isSoldOut ? "Este producto está agotado. Consultanos por su reposición." : "Consultá disponibilidad de este producto.";
   document.querySelector("#message-text").value = isSoldOut ? `Hola, quiero consultar cuándo vuelve a estar disponible ${product.name}. Gracias.` : `Hola, quiero consultar por ${product.name}. ¿Cuentan con stock disponible? Gracias.`;
   dialog.showModal();
-  dialog.querySelector(".dialog-content").scrollTop = 0;
 }
 function showAdminPanel() {
   adminPanel.hidden = false;
@@ -267,7 +262,7 @@ async function loadCategories() {
 function renderAdminList() {
   const holder = document.querySelector("#admin-product-list");
   if (!currentAdmin) return;
-  holder.innerHTML = products.length ? products.map(product => `<div class="admin-product-row"><div class="admin-product-thumb">${photosOf(product)[0] ? `<img src="${safe(photosOf(product)[0])}" alt="" loading="lazy" decoding="async" />` : ""}</div><div class="admin-product-description"><strong>${safe(product.name)}</strong><span>${safe(categoryLabel(product.category))} · ${safe(product.price || "Sin precio")}${product.is_sold_out ? " · AGOTADO" : ""}${product.compare_at_price && product.price ? " · Oferta" : ""}${product.is_featured ? " · Destacado semanal" : ""}</span></div><button type="button" data-edit-product="${safe(product.id)}">Editar</button><button type="button" class="admin-delete" data-delete-product="${safe(product.id)}">Quitar</button></div>`).join("") : `<p class="admin-empty">Aún no agregaste productos.</p>`;
+  holder.innerHTML = products.length ? products.map(product => `<div class="admin-product-row"><div class="admin-product-thumb">${photosOf(product)[0] ? `<img src="${safe(photosOf(product)[0])}" alt="" />` : ""}</div><div class="admin-product-description"><strong>${safe(product.name)}</strong><span>${safe(categoryLabel(product.category))} · ${safe(product.price || "Sin precio")}${product.is_sold_out ? " · AGOTADO" : ""}${product.compare_at_price && product.price ? " · Oferta" : ""}${product.is_featured ? " · Destacado semanal" : ""}</span></div><button type="button" data-edit-product="${safe(product.id)}">Editar</button><button type="button" class="admin-delete" data-delete-product="${safe(product.id)}">Quitar</button></div>`).join("") : `<p class="admin-empty">Aún no agregaste productos.</p>`;
 }
 function renderPhotoDraft() {
   const holder = document.querySelector("#photo-order-preview");
@@ -313,40 +308,58 @@ function editProduct(product) {
   document.querySelector("#cancel-edit").hidden = false;
   document.querySelector("#product-form-title").scrollIntoView({ behavior: "smooth", block: "center" });
 }
-async function optimizeImage(file) {
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) return file;
-  let bitmap;
+async function optimizePhoto(file) {
+  if (file.size < 300 * 1024 || !/\.(jpe?g|png|webp|avif|heic|heif)$/i.test(file.name)) return file;
+  let source;
+  let objectUrl;
+  let canvas;
   try {
-    bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    if (typeof createImageBitmap === "function") {
+      try { source = await createImageBitmap(file); } catch {}
+    }
+    if (!source) {
+      objectUrl = URL.createObjectURL(file);
+      source = new Image();
+      await new Promise((resolve, reject) => {
+        source.onload = resolve;
+        source.onerror = reject;
+        source.src = objectUrl;
+      });
+    }
+    const width = source.naturalWidth || source.width;
+    const height = source.naturalHeight || source.height;
+    if (!width || !height || (Math.max(width, height) <= 1600 && file.size < 500 * 1024)) return file;
+    const ratio = Math.min(1, 1600 / Math.max(width, height));
+    canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * ratio));
+    canvas.height = Math.max(1, Math.round(height * ratio));
     const context = canvas.getContext("2d");
     if (!context) return file;
-    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const type = file.type === "image/jpeg" ? "image/jpeg" : "image/webp";
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, type, 0.78));
-    if (!blob || blob.type !== type || blob.size >= file.size * 0.9) return file;
-    const extension = type === "image/webp" ? "webp" : "jpg";
-    return new File([blob], file.name.replace(/\.[^.]+$/, "") + "." + extension, { type });
+    context.drawImage(source, 0, 0, canvas.width, canvas.height);
+    const encode = (type, quality) => new Promise(resolve => canvas.toBlob(resolve, type, quality));
+    let blob = await encode("image/webp", 0.82);
+    if (!blob || blob.type !== "image/webp") blob = await encode(file.type === "image/png" ? "image/png" : "image/jpeg", 0.82);
+    if (!blob || blob.size >= file.size * 0.88) return file;
+    const extension = blob.type === "image/webp" ? "webp" : blob.type === "image/png" ? "png" : "jpg";
+    const name = file.name.replace(/\.[^.]+$/, "").replace(/-optimizada$/i, "");
+    return new File([blob], `${name}-optimizada.${extension}`, { type: blob.type, lastModified: Date.now() });
   } catch {
     return file;
   } finally {
-    bitmap?.close();
+    if (source && typeof source.close === "function") source.close();
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    if (canvas) { canvas.width = 0; canvas.height = 0; }
   }
 }
+async function storePhoto(file) {
+  const cleanName = file.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-100) || "foto.jpg";
+  const path = `${crypto.randomUUID()}-${cleanName}`;
+  const { error } = await supabaseClient.storage.from(BUCKET).upload(path, file, { upsert: false, contentType: file.type || "image/jpeg" });
+  if (error) throw error;
+  return { path, url: supabaseClient.storage.from(BUCKET).getPublicUrl(path).data.publicUrl };
+}
 async function uploadPhotos(files, urls = []) {
-  for (const original of files) {
-    const file = await optimizeImage(original);
-    const cleanName = file.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-100) || "foto.jpg";
-    const path = `${crypto.randomUUID()}-${cleanName}`;
-    const { error } = await supabaseClient.storage.from(BUCKET).upload(path, file, {
-      upsert: false, contentType: file.type || "image/jpeg", cacheControl: "31536000"
-    });
-    if (error) throw error;
-    urls.push(supabaseClient.storage.from(BUCKET).getPublicUrl(path).data.publicUrl);
-  }
+  for (const file of files) urls.push((await storePhoto(await optimizePhoto(file))).url);
   return urls;
 }
 function storagePathFromUrl(url) {
@@ -357,6 +370,22 @@ function storagePathFromUrl(url) {
     const index = parsed.pathname.indexOf(marker);
     return index >= 0 ? decodeURIComponent(parsed.pathname.slice(index + marker.length)) : null;
   } catch { return null; }
+}
+function photoMimeType(path) {
+  const extension = path.split(".").pop()?.toLowerCase();
+  return ({ jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", avif: "image/avif", heic: "image/heic", heif: "image/heif" })[extension] || "application/octet-stream";
+}
+async function optimizeStoredPhoto(url) {
+  const path = storagePathFromUrl(url);
+  if (!path || /-optimizada\.(webp|png|jpg)$/i.test(path)) return null;
+  const { data, error } = await supabaseClient.storage.from(BUCKET).download(path);
+  if (error || !data) throw error || new Error("No se pudo descargar la foto.");
+  const name = path.split("/").pop() || "foto.jpg";
+  const original = new File([data], name, { type: data.type || photoMimeType(path) });
+  const optimized = await optimizePhoto(original);
+  if (optimized === original) return null;
+  const uploaded = await storePhoto(optimized);
+  return { ...uploaded, savedBytes: original.size - optimized.size };
 }
 
 filters.addEventListener("click", event => {
@@ -387,7 +416,6 @@ function changeCardPhoto(card, step) {
   const index = ((cardPhotoIndices.get(id) || 0) + step + photos.length) % photos.length;
   cardPhotoIndices.set(id, index);
   const scroller = card.querySelector(".card-photo-scroller");
-  loadNearbyCardPhotos(scroller, index);
   scroller.scrollTo({ left: index * scroller.clientWidth, behavior: "smooth" });
   card.querySelector(".photo-count").textContent = `${index + 1} / ${photos.length}`;
 }
@@ -556,6 +584,78 @@ document.querySelector("#photo-order-preview").addEventListener("click", event =
   }
 });
 
+document.querySelector("#stop-optimization").addEventListener("click", () => {
+  stopOptimizationRequested = true;
+  setStatus(document.querySelector("#optimization-status"), "Terminando el producto actual…");
+});
+document.querySelector("#optimize-existing").addEventListener("click", async () => {
+  const status = document.querySelector("#optimization-status");
+  if (!currentAdmin || !supabaseClient || optimizingExistingPhotos || savingProduct || savingStock) return;
+  if (productForm.elements.id.value) return setStatus(status, "Terminá o cancelá la edición del producto antes de optimizar las fotos.", true);
+  const scope = document.querySelector("#optimization-scope");
+  const selectedProducts = products.filter(product => scope.value === "all" || product.category === scope.value);
+  if (!selectedProducts.length) return setStatus(status, "No hay productos en esa categoría.");
+  const button = document.querySelector("#optimize-existing");
+  const stopButton = document.querySelector("#stop-optimization");
+  optimizingExistingPhotos = true;
+  stopOptimizationRequested = false;
+  button.disabled = true;
+  scope.disabled = true;
+  stopButton.hidden = false;
+  let reviewed = 0;
+  let replaced = 0;
+  let savedBytes = 0;
+  let failures = 0;
+  try {
+    for (const product of selectedProducts) {
+      if (stopOptimizationRequested) break;
+      const originalPhotos = Array.isArray(product.photos) ? product.photos.slice() : [];
+      const nextPhotos = originalPhotos.slice();
+      const uploadedPaths = [];
+      let productSavedBytes = 0;
+      let productReplacements = 0;
+      for (let index = 0; index < originalPhotos.length; index++) {
+        if (stopOptimizationRequested) break;
+        reviewed++;
+        try {
+          const result = await optimizeStoredPhoto(originalPhotos[index]);
+          if (!result) continue;
+          nextPhotos[index] = result.url;
+          uploadedPaths.push(result.path);
+          productReplacements++;
+          productSavedBytes += result.savedBytes;
+        } catch {
+          failures++;
+        }
+      }
+      if (productReplacements) {
+        try {
+          const { data, error } = await supabaseClient.from("products").update({ photos: nextPhotos }).eq("id", product.id).select("id, photos").single();
+          if (error || !data) throw error || new Error("No se confirmó el cambio.");
+          product.photos = data.photos;
+          replaced += productReplacements;
+          savedBytes += productSavedBytes;
+        } catch {
+          failures++;
+          if (uploadedPaths.length) { try { await supabaseClient.storage.from(BUCKET).remove(uploadedPaths); } catch {} }
+        }
+      }
+      setStatus(status, `Revisados ${reviewed} archivos en ${selectedProducts.indexOf(product) + 1} de ${selectedProducts.length} productos. Fotos reducidas: ${replaced}.`);
+    }
+    render();
+    renderAdminList();
+    const savedKb = Math.round(savedBytes / 1024);
+    const result = `${stopOptimizationRequested ? "Proceso detenido. " : "Revisión terminada. "}${reviewed} fotos revisadas, ${replaced} reducidas${savedKb ? `, ${savedKb} KB menos para descargar` : ""}.${failures ? ` ${failures} fotos o productos no pudieron actualizarse; puedes volver a intentarlo.` : ""}`;
+    setStatus(status, result, failures > 0);
+  } finally {
+    optimizingExistingPhotos = false;
+    stopOptimizationRequested = false;
+    button.disabled = false;
+    scope.disabled = false;
+    stopButton.hidden = true;
+  }
+});
+
 loginForm.addEventListener("submit", async event => {
   event.preventDefault();
   if (!supabaseClient) return setStatus(document.querySelector("#login-status"), "Falta terminar la conexión de la tienda.", true);
@@ -582,6 +682,7 @@ productForm.addEventListener("submit", async event => {
   event.preventDefault();
   if (!currentAdmin) return;
   const status = document.querySelector("#product-status");
+  if (optimizingExistingPhotos) return setStatus(status, "Esperá a que termine la optimización de fotos.", true);
   if (savingStock) return setStatus(status, "Esperá a que termine de actualizarse la disponibilidad.");
   const button = document.querySelector("#save-product");
   if (!photoDraft.length || photoDraft.length > 3) return setStatus(status, "El producto necesita entre 1 y 3 fotos.", true);
@@ -645,7 +746,7 @@ productForm.addEventListener("submit", async event => {
 });
 
 document.querySelector("#admin-product-list").addEventListener("click", async event => {
-  if (savingProduct) return;
+  if (savingProduct || optimizingExistingPhotos) return;
   const editButton = event.target.closest("[data-edit-product]");
   if (editButton) {
     const product = products.find(item => String(item.id) === editButton.dataset.editProduct);
@@ -688,22 +789,48 @@ categoryForm.addEventListener("submit", async event => {
   setStatus(status, `La categoría “${name}” ya está disponible.`);
 });
 
-document.querySelector("#category-list").addEventListener("click", async event => {
+document.querySelector("#category-list").addEventListener("click", event => {
+  const cancel = event.target.closest("[data-cancel-category]");
+  if (cancel) {
+    const row = cancel.closest(".category-list-item");
+    row.querySelector(".category-edit-form").hidden = true;
+    row.querySelector(".category-edit").hidden = false;
+    row.classList.remove("editing");
+    return;
+  }
   const button = event.target.closest("[data-edit-category]");
   if (!button || !currentAdmin || !categoriesTableReady) return;
-  const category = categories.find(item => item.value === button.dataset.editCategory);
+  const row = button.closest(".category-list-item");
+  document.querySelectorAll("#category-list .category-edit-form").forEach(form => {
+    form.hidden = true;
+    form.closest(".category-list-item").querySelector(".category-edit").hidden = false;
+    form.closest(".category-list-item").classList.remove("editing");
+  });
+  button.hidden = true;
+  row.classList.add("editing");
+  const form = row.querySelector(".category-edit-form");
+  form.hidden = false;
+  form.elements.label.focus();
+  form.elements.label.select();
+});
+
+document.querySelector("#category-list").addEventListener("submit", async event => {
+  const form = event.target.closest("[data-category-edit-form]");
+  if (!form) return;
+  event.preventDefault();
+  if (!currentAdmin || !categoriesTableReady) return;
+  const category = categories.find(item => item.value === form.dataset.categoryEditForm);
   if (!category) return;
-  const input = window.prompt("Escribe el nuevo nombre de la categoría:", category.label);
-  if (input === null) return;
-  const name = input.trim().replace(/\s+/g, " ");
+  const name = form.elements.label.value.trim().replace(/\s+/g, " ");
   const status = document.querySelector("#category-status");
   if (name.length < 2 || name.length > 50) return setStatus(status, "El nombre debe tener entre 2 y 50 caracteres.", true);
   if (categories.some(item => item.value !== category.value && [item.value, item.label].some(value => String(value).toLocaleLowerCase("es") === name.toLocaleLowerCase("es")))) return setStatus(status, "Ya existe otra categoría con ese nombre.", true);
-  button.disabled = true;
+  const saveButton = form.querySelector("button[type=submit]");
+  saveButton.disabled = true;
   setStatus(status, "Actualizando categoría…");
   const { error } = await supabaseClient.from("categories").update({ label: name }).eq("value", category.value);
   if (error) {
-    button.disabled = false;
+    saveButton.disabled = false;
     return setStatus(status, "No pudimos cambiar el nombre. Revisa la conexión y vuelve a intentar.", true);
   }
   await loadCategories();

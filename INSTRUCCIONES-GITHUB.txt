@@ -14,11 +14,14 @@ La configuración de Supabase que ya habilitó el destacado y las categorías ta
 PRODUCTOS AGOTADOS
 Para esta función nueva, ejecuta una sola vez el archivo privado urbaneros-stock-agotado-migracion-privada.sql en Supabase > SQL Editor > New query. No subas ese archivo al repositorio público. Los productos existentes siguen disponibles. Después de actualizar la página, entra al panel de administración y edita un producto. Al marcar “Marcar como agotado”, el estado se guarda inmediatamente. Al desmarcarlo, vuelve a estar disponible. En un producto nuevo, el estado se guarda al pulsar “Guardar producto”.
 
+FOTOS Y CATEGORÍAS
+Las fotos nuevas se reducen automáticamente antes de subirlas si el archivo resultante queda claramente más liviano. Las 26 fotos actuales de “CAMISETAS FÚTBOL” ya están en formato WebP y pesan menos de 190 KB cada una, así que no necesitan volver a comprimirse. Para revisar las demás, entra al panel privado y usa “Optimizar fotos existentes” con “Todo el catálogo” seleccionado. Las fotos que ya son livianas no se cambian. Las originales permanecen en Supabase como respaldo, aunque el catálogo use las versiones reducidas. Puedes detener el proceso y retomarlo más tarde.
+Las categorías del encabezado se actualizan desde Supabase. En el celular, para cambiar el nombre de una categoría toca “Editar”, escribe el nombre en el formulario y toca “Guardar”.
+
 PUBLICAR EN GITHUB
-1. Crea un repositorio público nuevo dedicado solo a la tienda; deja privado tu repositorio actual.
-2. Sube el contenido de esta carpeta, sin el SQL privado.
-3. En Settings > Pages, elige Deploy from a branch, selecciona main y /(root), y guarda.
-4. Espera el enlace que GitHub Pages mostrará en esa sección.
+1. No hace falta ejecutar ningún SQL nuevo para esta actualización.
+2. Sube el contenido de esta carpeta a la raíz del repositorio público Urbaneros-tienda, reemplazando los archivos anteriores. No subas el ZIP cerrado ni archivos SQL privados.
+3. Espera a que GitHub Pages termine de publicar y actualiza la página en el navegador.
 
 ENTRAR A ADMINISTRAR
 1. Abre la dirección pública de la tienda y añade #admin al final (por ejemplo, https://usuario.github.io/urbaneros-tienda/#admin).

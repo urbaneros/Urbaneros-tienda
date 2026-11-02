@@ -29,3 +29,21 @@
 .photo-order-actions button:disabled{opacity:.45;cursor:default}
 .photo-order-actions .photo-order-remove{grid-column:1/-1;border-color:#d1aca3;color:#943c2f}
 @media(max-width:520px){.photo-order-preview{gap:5px}.photo-order-item{padding:4px}.photo-order-actions{grid-template-columns:1fr}.photo-order-actions .photo-order-remove{grid-column:auto}.photo-order-actions button{font-size:9px}}
+.category-list-item.editing{display:grid;grid-template-columns:minmax(0,1fr) auto;width:100%;padding:10px;gap:7px}
+.category-edit-form{grid-column:1/-1;display:grid;gap:10px;padding-top:5px}
+.category-edit-form[hidden],.category-edit[hidden]{display:none!important}
+.category-edit-form label{display:grid;gap:6px;font-size:11px}
+.category-edit-form input{width:100%;min-width:0;padding:11px;font-size:15px}
+.category-edit-actions{display:flex;gap:8px}
+.category-edit-actions button{min-height:42px;padding:9px 14px;border:1px solid #b5a47f;background:#f5f2ec;color:#171715;font-weight:700;cursor:pointer}
+.category-edit-actions button[type=submit]{background:#c6a15a;border-color:#c6a15a}
+@media(max-width:520px){.category-list-item.editing{grid-template-columns:1fr}.category-edit-actions button{flex:1}}
+.image-manager{margin:24px 0;padding:18px;background:#ebe6dc;border:1px solid #d3c6a8}
+.image-manager h3{margin:0 0 7px;font:600 18px "Cinzel",Georgia,serif}
+.image-manager p{color:#67665f;font-size:12px;line-height:1.55}
+.image-manager label{margin:12px 0 7px}
+.image-manager select{width:100%;max-width:420px}
+.image-manager-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+.image-manager-actions button{min-height:42px}
+.image-manager-actions button:disabled{opacity:.6;cursor:wait}
+@media(max-width:760px){.admin-panel input,.admin-panel select{min-height:44px;font-size:16px}.category-edit{min-height:40px;padding:9px 11px}.image-manager-actions button{flex:1}}
